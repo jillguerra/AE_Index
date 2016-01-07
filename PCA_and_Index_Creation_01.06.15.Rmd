@@ -1,0 +1,112 @@
+---
+title: "Principle Component Analysis & Index Construction"
+author: "Jill Guerra"
+date: "January 5, 2016"
+output: 
+  html_document:
+    keep_md: true 
+---
+###Load packages 
+```{r}
+library(ggplot2)
+library(car) 
+library(dplyr)
+suppressPackageStartupMessages(library(dplyr))
+library(gridExtra)
+library("reshape2")
+```
+
+###Import file - Remember to change depending on what you need. 
+```{r}
+fulldf_aei<- read.csv("~/jillguerra/AEI/Census_data_formatted_for_R_01.03.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
+```
+
+###Principle Component Analysis 
+ALL FROM HERE: http://www.r-bloggers.com/computing-and-visualizing-pca-in-r/
+```{r}
+
+# omit NAs for this part 
+fulldf_aei_omit <- na.omit(fulldf_aei)
+
+# log transform 
+log_aei <- log(fulldf_aei_omit [, 3:11]) # columns with the AE components going to be used in the index 
+aei_species <- fulldf_aei_omit [, 2] # this calls the categorical variable 
+# calls the Municipality names.
+
+#Change all infinite values to NAs 
+log_aei<- do.call(data.frame,lapply(log_aei, function(x) replace(x, is.infinite(x),NA))) # this changes all of them! 
+# ok but the data.frame doesn't have any other things in there (only the components)
+
+#Drop all observations with NA (thus all the infinite because they were previously changed to NA)
+log_aei <- na.omit(log_aei) 
+
+#Apply PCA - scale. = TRUE is highly advisable, but default is FALSE. 
+log_aei <- prcomp(log_aei, 
+                      na.action = na.exclude, 
+                      center = TRUE,               
+                      scale. = TRUE) 
+print(log_aei)
+
+# plot method
+plot(log_aei, type = "l")
+
+# summary method
+summary(log_aei)
+
+```
+
+### Graphing the PCA 
+```{r}
+library(devtools)
+#install_github("ggbiplot", "vqv") 
+ 
+library(ggbiplot)
+g <- ggbiplot(log_aei, obs.scale = 1, var.scale = 1, 
+              groups = aei_species, ellipse = TRUE, 
+              circle = TRUE)
+g <- g + scale_color_discrete(name = '')
+g <- g + theme(legend.direction = 'horizontal', 
+               legend.position = 'top')
+print(g)
+```
+
+###AEI with brute force 
+```{r create AEI with force}
+######## AEI with just 6 variables 
+# this works for the regular data.frame 
+fulldf_aei$ae_index <- ((fulldf_aei$nochem + fulldf_aei$croprot + fulldf_aei$covercrop + fulldf_aei$apm + fulldf_aei$lowtill + fulldf_aei$drip)/6) # brute force mean 
+# note that this creates an NA in the index for any observations that have any NAs in them at all.
+
+#### to do it as a function whereby the index is based on whichever dataframe is put in. NOT Working right now! 
+# create_aei <- function (x) {
+#   x$ae_index <- ((x$nochem + x$croprot + x$covercrop + x$apm + x$lowtill + x$drip)/6)}
+# create_aei(fulldf_aei)
+# 
+# create_aei_test <- function (x) {
+#   x %>% 
+#     mutate(ae_index = ((x$nochem + x$croprot + x$covercrop + x$apm + x$lowtill + x$drip)/6))
+# } 
+# fulldf_aei$ae_index <- create_aei_test(fulldf_aei)
+
+```
+
+Drop NA observations when needed
+```{r dropNAsindataframe}
+#Create a new data.frame that only has rows w/o NAs
+fulldf_aei_dropnas <- na.omit(fulldf_aei) # 262/293 municipalities included 
+
+```
+
+
+###Check for scale consistency - Chronbach's alpha
+```{r chronbach's alpha}
+#alpha(fulldf_aei$aes)
+
+```
+
+##Resources & Notes 
+
+####PCA 
+overview: http://www.r-bloggers.com/computing-and-visualizing-pca-in-r/
+cleaning INF values: http://stackoverflow.com/questions/12188509/cleaning-inf-values-from-an-r-dataframe
+* can't use is.infinite for a data.frame 
