@@ -15,11 +15,17 @@ library(dplyr)
 suppressPackageStartupMessages(library(dplyr))
 library(gridExtra)
 library("reshape2")
+#install.packages("png")
+library("png")
+#install.packages("raster")
+library("raster") # for arranging pngs 
+#install.packages("moments")
+library("moments") # for skew & kurtosis
 ```
 
 ###Import file
 ```{r}
-fulldf_aei<- read.csv("~/jillguerra/AEI/Census_data_formatted_for_R_01.03.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
+fulldf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_01.06.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
 ```
 
 ###Reshape data 
@@ -44,36 +50,90 @@ aei_melted2 <- aei_melted %>%
 str(aei)
 
 # loop to look at the distributions for all variables. It currently works. Saves all individual graphs in png files 
-nm <- names(fulldf_aei)
+nm <- names(fulldf_aei[,3:18]) # calls all the AEI variables 
 for (i in seq_along(nm)) {
   plots <- ggplot(fulldf_aei, aes_string(x=nm[i])) +
     geom_histogram()
-  ggsave(plots,filename=paste("myplot",nm[i],".png",sep=""))
+  ggsave(plots,filename=paste("dist",nm[i],".png",sep=""))
  
 }
 
-hist(aei$nochem)
-hist(aei$croprot)
-hist(aei$covercrop)
-hist(aei$apm)
-hist(aei$noconvtill)
-hist(aei$directplanting)
-hist(aei$lowtill)
-hist(aei$drip)
-hist(aei$lowincome) # normal 
-hist(aei$offfarminc)
-hist(aei$credit)
-hist(aei$associated)
-hist(aei$famlab)
-hist(aei$regtech)
+rl = lapply(sprintf("dist",i,".png",sep=""), png::readPNG)
+gl = lapply(rl, grid::rasterGrob)
+do.call(gridExtra::grid.arrange, gl) 
 
+#histograms
+hist(fulldf_aei$nochem)
+hist(fulldf_aei$usefert)
+hist(fulldf_aei$orgcomp)
+hist(fulldf_aei$nitchem)
+hist(fulldf_aei$notnitchem)
+hist(fulldf_aei$manure)
+hist(fulldf_aei$Innoculents)
+hist(fulldf_aei$croprot)
+hist(fulldf_aei$covercrop)
+hist(fulldf_aei$apm)
+hist(fulldf_aei$noconvtill)
+hist(fulldf_aei$directplanting)
+hist(fulldf_aei$lowtill)
+hist(fulldf_aei$drip)
+hist(fulldf_aei$lowincome) # normal 
+hist(fulldf_aei$offfarminc)
+hist(fulldf_aei$credit)
+hist(fulldf_aei$associated)
+hist(fulldf_aei$famlab)
+hist(fulldf_aei$regtech)
+
+#skewness 
+skewness(fulldf_aei$nochem)
+skewness(fulldf_aei$usefert)
+skewness(fulldf_aei$orgcomp)
+skewness(fulldf_aei$nitchem)
+skewness(fulldf_aei$notnitchem)
+skewness(fulldf_aei$manure)
+skewness(fulldf_aei$Innoculents)
+skewness(fulldf_aei$croprot)
+skewness(fulldf_aei$covercrop)
+skewness(fulldf_aei$apm)
+skewness(fulldf_aei$noconvtill)
+skewness(fulldf_aei$directplanting)
+skewness(fulldf_aei$lowtill)
+skewness(fulldf_aei$drip)
+skewness(fulldf_aei$lowincome) # normal 
+skewness(fulldf_aei$offfarminc)
+skewness(fulldf_aei$credit)
+skewness(fulldf_aei$associated)
+skewness(fulldf_aei$famlab)
+skewness(fulldf_aei$regtech)
+
+#kurtosis
+kurtosis(fulldf_aei$nochem)
+kurtosis(fulldf_aei$usefert)
+kurtosis(fulldf_aei$orgcomp)
+kurtosis(fulldf_aei$nitchem)
+kurtosis(fulldf_aei$notnitchem)
+kurtosis(fulldf_aei$manure)
+kurtosis(fulldf_aei$Innoculents)
+kurtosis(fulldf_aei$croprot)
+kurtosis(fulldf_aei$covercrop)
+kurtosis(fulldf_aei$apm)
+kurtosis(fulldf_aei$noconvtill)
+kurtosis(fulldf_aei$directplanting)
+kurtosis(fulldf_aei$lowtill)
+kurtosis(fulldf_aei$drip)
+kurtosis(fulldf_aei$lowincome) # normal 
+kurtosis(fulldf_aei$offfarminc)
+kurtosis(fulldf_aei$credit)
+kurtosis(fulldf_aei$associated)
+kurtosis(fulldf_aei$famlab)
+kurtosis(fulldf_aei$regtech)
 ```
 
 Results
 ***
-- skewed to the right: nochem, croprot, covercrop, apm, low till, drip, offfarminc, regtech
-- skewed to the left: soil, assoc (sort of), famlab
-- credit, noconvtill and direct planting are both very strange. 
+- right skewed: nochem, croprot, covercrop, apm, low till, drip, offfarminc, regtech, orgcomp, notnitchem, innoculents
+- left skewed: soil, assoc (sort of), famlab, usefert,nitchem
+- credit, noconvtill, manure and direct planting are both very strange. 
 
 ###Check variability 
 ```{r}
