@@ -106,7 +106,7 @@ skewness(fulldf_aei$associated)
 skewness(fulldf_aei$famlab)
 skewness(fulldf_aei$regtech)
 
-#kurtosis
+#kurtosis new
 kurtosis(fulldf_aei$nochem)
 kurtosis(fulldf_aei$usefert)
 kurtosis(fulldf_aei$orgcomp)
