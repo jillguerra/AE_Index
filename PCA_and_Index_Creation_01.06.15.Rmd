@@ -92,16 +92,16 @@ add_aei_df_dropnas <- na.omit(fulldf_aei) # 262/293 municipalities included
 
 
 ###Check for scale consistency - Chronbach's alpha
-```{r chronbach's alpha}
-alpha(ae_index)
+```{r}
+#alpha(ae_index)
 ####### Whaaat? Why is it returning colours? 
 ```
 
 
 ```{r testing regressions}
-lm_test3 <- lm(ae_index ~ offfarminc + credit + lowincome, add_aei_df, , , na.exclude)
+lm_test3 <- lm(ae_index ~ offfarminc + credit + lowincome, add_aei_df)
 
-lm_test3
+ lm_test3
 
 
 

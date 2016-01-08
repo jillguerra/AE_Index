@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "Data checks"
 author: "Jill Guerra"
 date: "January 3, 2016"
 output: 
@@ -13,7 +13,7 @@ library(ggplot2)
 library(car) 
 library(dplyr)
 suppressPackageStartupMessages(library(dplyr))
-library(gridExtra)
+library(gridExtra) # for grid.arrange 
 library("reshape2")
 #install.packages("png")
 library("png")
@@ -21,6 +21,7 @@ library("png")
 library("raster") # for arranging pngs 
 #install.packages("moments")
 library("moments") # for skew & kurtosis
+library(knitr)
 ```
 
 ###Import file
@@ -47,8 +48,6 @@ aei_melted2 <- aei_melted %>%
 
 ###Checking distribution 
 ```{r}
-str(aei)
-
 # loop to look at the distributions for all variables. It currently works. Saves all individual graphs in png files 
 nm <- names(fulldf_aei[,3:18]) # calls all the AEI variables 
 for (i in seq_along(nm)) {
@@ -58,9 +57,9 @@ for (i in seq_along(nm)) {
  
 }
 
-rl = lapply(sprintf("dist",i,".png",sep=""), png::readPNG)
-gl = lapply(rl, grid::rasterGrob)
-do.call(gridExtra::grid.arrange, gl) 
+# rl = lapply(sprintf("dist",i,".png",sep=""), png::readPNG)
+# gl = lapply(rl, grid::rasterGrob)
+# do.call(gridExtra::grid.arrange, gl) 
 
 #histograms
 hist(fulldf_aei$nochem)
@@ -77,148 +76,108 @@ hist(fulldf_aei$noconvtill)
 hist(fulldf_aei$directplanting)
 hist(fulldf_aei$lowtill)
 hist(fulldf_aei$drip)
-hist(fulldf_aei$lowincome) # normal 
+hist(fulldf_aei$lowincome) 
 hist(fulldf_aei$offfarminc)
 hist(fulldf_aei$credit)
 hist(fulldf_aei$associated)
 hist(fulldf_aei$famlab)
 hist(fulldf_aei$regtech)
+```
+
+###DATA CHECKING 
+```{r, results="hide"}
+# create dataframe without the first two columns because they aren't numbers 
+df_onlynum <- fulldf_aei[,3:(ncol(fulldf_aei))] # drop the first two columns 
 
 #skewness 
-skewness(fulldf_aei$nochem)
-skewness(fulldf_aei$usefert)
-skewness(fulldf_aei$orgcomp)
-skewness(fulldf_aei$nitchem)
-skewness(fulldf_aei$notnitchem)
-skewness(fulldf_aei$manure)
-skewness(fulldf_aei$Innoculents)
-skewness(fulldf_aei$croprot)
-skewness(fulldf_aei$covercrop)
-skewness(fulldf_aei$apm)
-skewness(fulldf_aei$noconvtill)
-skewness(fulldf_aei$directplanting)
-skewness(fulldf_aei$lowtill)
-skewness(fulldf_aei$drip)
-skewness(fulldf_aei$lowincome) # normal 
-skewness(fulldf_aei$offfarminc)
-skewness(fulldf_aei$credit)
-skewness(fulldf_aei$associated)
-skewness(fulldf_aei$famlab)
-skewness(fulldf_aei$regtech)
+skew <- apply(df_onlynum, 2, skewness, na.rm=TRUE) # call correct df, 2 means looking at columsn (1 would indicate looking rows), skewness is the function applied, ignore NAs 
 
-#kurtosis new
-kurtosis(fulldf_aei$nochem)
-kurtosis(fulldf_aei$usefert)
-kurtosis(fulldf_aei$orgcomp)
-kurtosis(fulldf_aei$nitchem)
-kurtosis(fulldf_aei$notnitchem)
-kurtosis(fulldf_aei$manure)
-kurtosis(fulldf_aei$Innoculents)
-kurtosis(fulldf_aei$croprot)
-kurtosis(fulldf_aei$covercrop)
-kurtosis(fulldf_aei$apm)
-kurtosis(fulldf_aei$noconvtill)
-kurtosis(fulldf_aei$directplanting)
-kurtosis(fulldf_aei$lowtill)
-kurtosis(fulldf_aei$drip)
-kurtosis(fulldf_aei$lowincome) # normal 
-kurtosis(fulldf_aei$offfarminc)
-kurtosis(fulldf_aei$credit)
-kurtosis(fulldf_aei$associated)
-kurtosis(fulldf_aei$famlab)
-kurtosis(fulldf_aei$regtech)
-```
+#kurtosis
+kurt <- apply(df_onlynum, 2, kurtosis, na.rm=TRUE) # df, looking at columns, kurtosis is function, ignore NAs
 
-Results
-***
-- right skewed: nochem, croprot, covercrop, apm, low till, drip, offfarminc, regtech, orgcomp, notnitchem, innoculents
-- left skewed: soil, assoc (sort of), famlab, usefert,nitchem
-- credit, noconvtill, manure and direct planting are both very strange. 
+#variance 
+variance <- apply(df_onlynum, 2, var, na.rm=TRUE)# df, looking at columns, variance is function, ignore NAs
 
-###Check variability 
-```{r}
+#standard deviations 
+sd <- apply(df_onlynum, 2, sd, na.rm=TRUE)
 
-var(aei$nochem)
-var(aei$croprot)
-var(aei$covercrop)
-var(aei$apm)
-var(aei$noconvtill)
-var(aei$directplanting)
-var(aei$lowtill)
-var(aei$drip)
-var(aei$soil)
-var(aei$lowincome) 
-var(aei$offfarminc)
-var(aei$credit)
-var(aei$associated)
-var(aei$famlab)
-var(aei$regtech)
+#standard error of the mean 
+sd <- apply(df_onlynum, 2, sd, na.rm=TRUE)
+
+# coefficient of variation 
+# CV <- function(mean, sd) {
+#   (sd/mean)*100
+# }
+
 
 ```
 
-Results:
-***
-- noconvtill and directplanting are incredibly varied compared to the others 
-- lowinc, assoc, famlab and drip have no variance? Weird 
 
-###### How do you know how much variance is ok?? 
+###Create table with values for data checks
+```{r, }
+#combine values lists into a dataframe 
+data_checks <- cbind(kurt, skew, variance, sd) 
+knitr::kable(data_checks)
+data_checks
+```
 
 ###Checking Bivariate relationships of index components 
 ```{r}
 
 # NOCHEM
-a1 <- ggplot(aei, aes(nochem, croprot)) +
+a1 <- ggplot(fulldf_aei, aes(nochem, croprot)) +
   geom_point()+
   stat_smooth() 
-a2 <- ggplot(aei, aes(nochem, covercrop)) +
+a2 <- ggplot(fulldf_aei, aes(nochem, covercrop)) +
   geom_point() +
   stat_smooth() 
-a3 <- ggplot(aei, aes(nochem, apm)) +
+a3 <- ggplot(fulldf_aei, aes(nochem, apm)) +
   geom_point() +
   stat_smooth() 
-a4 <- ggplot(aei, aes(nochem, noconvtill)) +
+a4 <- ggplot(fulldf_aei, aes(nochem, noconvtill)) +
   geom_point() +
   stat_smooth() 
-a5 <- ggplot(aei, aes(nochem, directplanting)) +
+a5 <- ggplot(fulldf_aei, aes(nochem, directplanting)) +
   geom_point() +
   stat_smooth() 
-a6 <- ggplot(aei, aes(nochem, lowtill)) +
+a6 <- ggplot(fulldf_aei, aes(nochem, lowtill)) +
   geom_point() +
   stat_smooth() 
-a7 <- ggplot(aei, aes(nochem, soil)) +
+a7 <- ggplot(fulldf_aei, aes(nochem, soil)) +
   geom_point() +
   stat_smooth() 
-a8 <- ggplot(aei, aes(nochem, drip)) +
+a8 <- ggplot(fulldf_aei, aes(nochem, drip)) +
   geom_point() +
   stat_smooth()
-a9 <- ggplot(aei, aes(nochem, fert)) +
+a9 <- ggplot(fulldf_aei, aes(nochem, usefert)) +
   geom_point() +
   stat_smooth()
 grid.arrange(a1,a2,a3,a4,a5,a6,a7,a8,a9, ncol=3)
 
+
 # CROPROT
-b1 <- ggplot(aei, aes(croprot, covercrop)) +
+b1 <- ggplot(fulldf_aei, aes(croprot, covercrop)) +
   geom_point() +
   stat_smooth() 
-b2 <- ggplot(aei, aes(croprot, apm)) +
+b2 <- ggplot(fulldf_aei, aes(croprot, apm)) +
   geom_point() +
   stat_smooth() 
-b3 <- ggplot(aei, aes(croprot, noconvtill)) +
+b3 <- ggplot(fulldf_aei, aes(croprot, noconvtill)) +
   geom_point() +
   stat_smooth() 
-b4 <- ggplot(aei, aes(croprot, directplanting)) +
+b4 <- ggplot(fulldf_aei, aes(croprot, directplanting)) +
   geom_point() +
   stat_smooth() 
-b5 <- ggplot(aei, aes(croprot, lowtill)) +
+b5 <- ggplot(fulldf_aei, aes(croprot, lowtill)) +
   geom_point() +
   stat_smooth()
-b6 <- ggplot(aei, aes(croprot, soil)) +
+b6 <- ggplot(fulldf_aei, aes(croprot, soil)) +
   geom_point() +
   stat_smooth()
-b7 <- ggplot(aei, aes(croprot, drip)) +
+b7 <- ggplot(fulldf_aei, aes(croprot, drip)) +
   geom_point() +
   stat_smooth()
-b8 <- ggplot(aei, aes(croprot, fert)) +
+b8 <- ggplot(fulldf_aei, aes(croprot, usefert)) +
   geom_point() +
   stat_smooth()
 grid.arrange(b1,b2,b3,b4,b5,b6,b7,b8, ncol=3) # put all the graphs into one grid 
@@ -242,7 +201,7 @@ c5 <- ggplot(fulldf_aei, aes(covercrop, soil)) +
 c6 <- ggplot(fulldf_aei, aes(covercrop, drip)) +
   geom_point() +
   stat_smooth()
-c7 <- ggplot(fulldf_aei, aes(covercrop, fert)) +
+c7 <- ggplot(fulldf_aei, aes(covercrop, usefert)) +
   geom_point() +
   stat_smooth()
 grid.arrange(c1,c2,c3,c4,c5,c6,c7, ncol=3) # put all the graphs into one grid 
@@ -263,7 +222,7 @@ d4 <- ggplot(fulldf_aei, aes(apm, soil)) +
 d5 <- ggplot(fulldf_aei, aes(apm, drip)) +
   geom_point() +
   stat_smooth()
-d6 <- ggplot(fulldf_aei, aes(apm, fert)) +
+d6 <- ggplot(fulldf_aei, aes(apm, usefert)) +
   geom_point() +
   stat_smooth()
 grid.arrange(d1,d2,d3,d4,d5,d6, ncol=3) # put all the graphs into one grid 
@@ -283,15 +242,16 @@ e3 <- ggplot(fulldf_aei, aes(drip, lowtill)) +
 e4 <- ggplot(fulldf_aei, aes(drip, soil)) +
   geom_point() +
   stat_smooth()
-e5 <- ggplot(fulldf_aei, aes(drip, fert)) +
+e5 <- ggplot(fulldf_aei, aes(drip, usefert)) +
   geom_point() +
   stat_smooth()
 grid.arrange(e1,e2,e3,e4,e5, ncol=3)
 
 ```
 
-Results: 
-***
+
+####Results: 
+
 - very clear relatioship between nochem and fertilizer. 
 - some relationship  between fert and covercrop/croprot/apm
 
@@ -342,8 +302,8 @@ grid.arrange(x, x1, ncol=2)
   stat_smooth()) 
 ```
 
-Results
-***
+####Results
+
 - credit and associated positively related 
 - no other ones are related in any significant way. 
 
@@ -369,8 +329,8 @@ grid.arrange(n, n1, n2,n3,n4, ncol=3)
 
 ```
 
-Results: 
-***
+####Results: 
+
 - interesting negative relationship between associatedand credit and nochem. Seems to show that more associatedness and access to credit will actually lead to higher levels of agrichem useage. 
 
 ###Testing to get all on the same graph
@@ -421,5 +381,8 @@ https://flowingdata.com/2012/05/15/how-to-visualize-and-compare-distributions/
 
 Creating a looping graph 
 http://www.r-bloggers.com/ggplot2-graphics-in-a-loop/
+
+Dealing with non-normal data 
+http://www.isixsigma.com/tools-templates/normality/dealing-non-normal-data-strategies-and-tools/
 
 
