@@ -1,0 +1,23 @@
+---
+title: "Tracking Analysis Results"
+author: "Jill Guerra"
+date: "January 8, 2016"
+output: html_document
+---
+
+The current results 
+
+- some heavy skew & kurtosis (look at excel sheet)
+- very clear negativerelatioship between nochem and fertilizer. 
+- some relationship  between fert and covercrop/croprot/apm
+- credit and associated positively related 
+- crop rot and direct planting somewhat positively related 
+- interesting negative relationship between associatedand credit and nochem. Seems to show that more associatedness and access to credit will actually lead to higher levels of agrichem useage. 
+- soil not great because I don't know what it means! 
+
+- scale with:
+orgcompost, manure, covercrop, croprotation, apm, lowtill, soil and drip had alpha of 0.47 NOT GOOD 
+
+
+
+

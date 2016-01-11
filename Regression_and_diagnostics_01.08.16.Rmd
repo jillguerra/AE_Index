@@ -1,0 +1,109 @@
+---
+title: "Regression"
+author: "Jill Guerra"
+date: "January 8, 2016"
+output: html_document
+---
+Need to have finalized excel spreadsheet here with sustainability index 
+Steps: 
+Regression 
+Summary of regression 
+Residuals
+Leverage
+Outliers 
+Cooks D 
+
+##SetUp
+###Load packages 
+```{r}
+library(ggplot2)
+library(car) 
+library(dplyr)
+suppressPackageStartupMessages(library(dplyr))
+library(gridExtra)
+library("reshape2")
+#install.packages("MASS")
+library("MASS")
+```
+
+###Import file - Remember to change depending on what you need. 
+```{r}
+rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_01.06.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
+```
+
+###AEI
+```{r}
+ae_index <- ((rawdf_aei$nochem + rawdf_aei$usefert +rawdf_aei$orgcomp + rawdf_aei$manure + rawdf_aei$croprot + rawdf_aei$covercrop + rawdf_aei$apm + rawdf_aei$lowtill + rawdf_aei$drip)/9) # create index! 
+
+df_aei<- cbind(rawdf_aei, ae_index) # add the index into a new df 
+df_aei_omit_nas <- na.omit(df_aei)
+
+```
+
+```{r testing regressions}
+# full dataset 
+lm_full <- lm(ae_index ~ famlab + lowincome + associated + regtech + credit + offfarminc, df_aei)
+lm_full
+
+```
+
+```{r diagnostics on full}
+summary(lm_full)
+
+opar <- par(mfrow = c(2,2), oma = c(0, 0, 1.1, 0)) # not quite sure what this does but got it from ats.ucla website shown below 
+plot(lm_full, las = 1) # highlights the observations that may be problematic 
+
+par(opar)
+
+# because this first run hightlighted 88, 100, 47, 227 as potential issues, the next line picks them out. 
+df_aei[c(88,100,47,227), 1:2]
+
+cd_full <- cooks.distance(lm_full) # run cook's D looking for leverage and residual
+cd_res <- stdres(lm_full) #  calculate student residuals
+diag_full <- cbind(df_aei_omit_nas, cd_full, cd_res) # add cooks D and student residuals to the dataframe
+##### had to use the df with no NAs or they wouldn't be the same length 
+##### find a way to do it with NAs? 
+
+#Cook's D 
+diag_full[cd_full > 4/(293-6-1), ] #pull out on the cook's D's that are great than 
+####### here n = 293, k = 6 (6 independent variables, 1 dependent?) 
+# gives back 1,2,10,33,47,70,76,88,100,105,113,118,124,130,131,148,155,170,179,209,212,227,248
+
+#Residuals - 
+rabs <- abs(cd_res) # absolute value of the residuals
+diag_full2 <- cbind(diag_full, rabs) # bind these residuals with the previous df
+diag_full2_sorted <- diag_full2[order(-rabs), ]
+diag_full2_sorted[1:10, ] # this shows the largest residuals 
+# turn out to be 10, 88, 47, 131,70, 33, 118, 227, 170, 124 
+
+```
+
+
+
+
+
+
+
+
+
+```{r no NAs}
+# no observations with NAs
+lm_na_omitted <- lm(ae_index ~ famlab + lowincome + associated + regtech + credit + offfarminc, df_aei_omit_nas) # testing if NAs are omitted. 
+lm_na_omitted 
+
+summary(lm_na_omitted)
+
+opar <- par(mfrow = c(2,2), oma = c(0, 0, 1.1, 0)) # not quite sure what this does but got it from ats.ucla website shown below 
+plot(lm_na_omitted, las = 1) # highlights the observations that may be problematic 
+# shows the same values as above 
+par(opar)
+```
+
+```{r subset}
+# get a subset showing all the observations with NA values 
+new_DF <- subset(df_aei, is.na(df_aei$ae_index))
+subset()
+
+# almost all NAs in the ae_index are driven by drip irrigation 
+```
+

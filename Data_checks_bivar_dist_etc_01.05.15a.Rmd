@@ -36,11 +36,24 @@ aei_melted <- melt(fulldf_aei) # new dataframe with melted data
 aes_index_var <- c("nochem", "croprot", "covercrop", "apm", "noconvtill", "directplanting", "lowtill", "drip") # drop of just index variables 
 aes_socecon_var <- c("lowincome", "offfarminc", "association", "credit", "regtech", "famlab")# group of just the social and economic variables 
 
+####### WORKING ON THIS 
+aei_meltedtest <- melth(fulldf_aei, id.var)
+test <- c("nochem", "croprot", "covercrop")
 aei_melted2 <- aei_melted %>% 
-  filter(variable %in% aes_index_var) # new dataframe with just the index variables 
+  filter(variable %in% test) # new dataframe with just the index variables 
 
-(ggplot(aei_melted2, aes(x = X, y = value, colour = variable)) +
-  geom_point()) # graph works. But now I really know that this graph should be showing the fitted values not the points. 
+(ggplot(aei_melted2, aes(X, y = value, colour = variable)) + 
+  geom_point() +
+  geom_smooth()) # graph works. But now I really know that this graph should be showing the fitted values not the points. 
+
+# want to use this! 
+(ggplot(aei_melted, aes(x=lifeExp, fill=region)) +
+   geom_density(binwidth=.5, alpha=.5, position="identity") +
+  coord_flip() + 
+  facet_grid(. ~ year) +
+  ggtitle("Density of life expectancy by year in the Americas") +
+  theme(axis.ticks = element_blank(), axis.text.x = element_blank()))  
+
 
 # not sure how to use this because the x variable doesn't make sense 
 
@@ -49,13 +62,13 @@ aei_melted2 <- aei_melted %>%
 ###Checking distribution 
 ```{r}
 # loop to look at the distributions for all variables. It currently works. Saves all individual graphs in png files 
-nm <- names(fulldf_aei[,3:18]) # calls all the AEI variables 
-for (i in seq_along(nm)) {
-  plots <- ggplot(fulldf_aei, aes_string(x=nm[i])) +
-    geom_histogram()
-  ggsave(plots,filename=paste("dist",nm[i],".png",sep=""))
- 
-}
+# nm <- names(fulldf_aei[,3:18]) # calls all the AEI variables 
+# for (i in seq_along(nm)) {
+#   plots <- ggplot(fulldf_aei, aes_string(x=nm[i])) +
+#     geom_histogram()
+#   ggsave(plots,filename=paste("dist",nm[i],".png",sep=""))
+#  
+# }
 
 # rl = lapply(sprintf("dist",i,".png",sep=""), png::readPNG)
 # gl = lapply(rl, grid::rasterGrob)
@@ -329,7 +342,87 @@ grid.arrange(n, n1, n2,n3,n4, ncol=3)
 
 ```
 
+```{r}
+
+t1 <- ggplot(fulldf_aei, aes(associated, nochem)) +
+  geom_point() +
+  stat_smooth() 
+t2 <- ggplot(fulldf_aei, aes(associated, usefert)) +
+  geom_point() +
+  stat_smooth() 
+t3 <- ggplot(fulldf_aei, aes(associated, nitchem)) +
+  geom_point() +
+  stat_smooth() 
+t4 <- ggplot(fulldf_aei, aes(associated, notnitchem)) +
+  geom_point() +
+  stat_smooth() 
+t5 <- ggplot(fulldf_aei, aes(associated, orgcomp)) +
+  geom_point() +
+  stat_smooth() 
+t6 <- ggplot(fulldf_aei, aes(associated, manure)) +
+  geom_point() +
+  stat_smooth() 
+t7 <- ggplot(fulldf_aei, aes(associated, covercrop)) +
+  geom_point() +
+  stat_smooth() 
+t8 <- ggplot(fulldf_aei, aes(associated, croprot)) +
+  geom_point() +
+  stat_smooth() 
+t9 <- ggplot(fulldf_aei, aes(associated, lowtill)) +
+  geom_point() +
+  stat_smooth() 
+t10 <- ggplot(fulldf_aei, aes(associated, soil)) +
+  geom_point() +
+  stat_smooth() 
+t11 <- ggplot(fulldf_aei, aes(associated, drip)) +
+  geom_point() +
+  stat_smooth() 
+grid.arrange(t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11, ncol=3)
+
+```
+
+```{r}
+u1 <- ggplot(fulldf_aei, aes(famlab, nochem)) +
+  geom_point() +
+  stat_smooth() 
+u2 <- ggplot(fulldf_aei, aes(famlab, usefert)) +
+  geom_point() +
+  stat_smooth() 
+u3 <- ggplot(fulldf_aei, aes(famlab, nitchem)) +
+  geom_point() +
+  stat_smooth() 
+u4 <- ggplot(fulldf_aei, aes(famlab, notnitchem)) +
+  geom_point() +
+  stat_smooth() 
+u5 <- ggplot(fulldf_aei, aes(famlab, orgcomp)) +
+  geom_point() +
+  stat_smooth() 
+u6 <- ggplot(fulldf_aei, aes(famlab, manure)) +
+  geom_point() +
+  stat_smooth() 
+u7 <- ggplot(fulldf_aei, aes(famlab, covercrop)) +
+  geom_point() +
+  stat_smooth() 
+u8 <- ggplot(fulldf_aei, aes(famlab, croprot)) +
+  geom_point() +
+  stat_smooth() 
+u9 <- ggplot(fulldf_aei, aes(famlab, lowtill)) +
+  geom_point() +
+  stat_smooth() 
+u10 <- ggplot(fulldf_aei, aes(famlab, soil)) +
+  geom_point() +
+  stat_smooth() 
+u11 <- ggplot(fulldf_aei, aes(famlab, drip)) +
+  geom_point() +
+  stat_smooth() 
+grid.arrange(u1,u2,u3,u4,u5,u6,u7,u8,u9,u10,u11, ncol=3)
+
+
+```
+
+
 ####Results: 
+
 
 - interesting negative relationship between associatedand credit and nochem. Seems to show that more associatedness and access to credit will actually lead to higher levels of agrichem useage. 
 
@@ -372,7 +465,15 @@ plot_nochem <- ggplot(fulldf_aei, aes(associated, nochem)) +
 grid.arrange(plot_nochemfit, plot_nochem, ncol = 2)
 
 nochem_lm
+
 ```
+
+```{r}
+# create graphs to see the 
+
+
+```
+
 ##RESOURCES 
 
 

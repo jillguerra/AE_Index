@@ -14,11 +14,13 @@ library(dplyr)
 suppressPackageStartupMessages(library(dplyr))
 library(gridExtra)
 library("reshape2")
+#install.packages("psych")
+library(psych) # needed for chronbach's alpha
 ```
 
 ###Import file - Remember to change depending on what you need. 
 ```{r}
-fulldf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_01.06.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
+rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_01.06.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
 ```
 
 ###Principle Component Analysis 
@@ -26,11 +28,11 @@ ALL FROM HERE: http://www.r-bloggers.com/computing-and-visualizing-pca-in-r/
 ```{r}
 
 # omit NAs for this part 
-fulldf_aei_omit <- na.omit(fulldf_aei)
+rawdf_aei_omit <- na.omit(rawdf_aei)
 
 # log transform 
-log_aei <- log(fulldf_aei_omit [, 3:11]) # columns with the AE components going to be used in the index 
-aei_species <- fulldf_aei_omit [, 2] # this calls the categorical variable 
+log_aei <- log(rawdf_aei_omit [, 3:17]) # columns with the AE components going to be used in the index 
+aei_species <- rawdf_aei_omit [, 2] # this calls the categorical variable 
 # calls the Municipality names.
 
 #Change all infinite values to NAs 
@@ -76,9 +78,9 @@ print(plot_pca)
 ```{r create AEI with force}
 #### randomly chosen variables 
 # this works for the regular data.frame 
-ae_index <- ((fulldf_aei$nochem + fulldf_aei$usefert +fulldf_aei$orgcomp + fulldf_aei$manure + fulldf_aei$croprot + fulldf_aei$covercrop + fulldf_aei$apm + fulldf_aei$lowtill + fulldf_aei$drip)/9) # create index! 
+ae_index <- ((rawdf_aei$nochem + rawdf_aei$usefert +rawdf_aei$orgcomp + rawdf_aei$manure + rawdf_aei$croprot + rawdf_aei$covercrop + rawdf_aei$apm + rawdf_aei$lowtill + rawdf_aei$drip)/9) # create index! 
 
-add_aei_df <- cbind(fulldf_aei, ae_index) # add the index into a new df 
+add_aei_df <- cbind(rawdf_aei, ae_index) # add the index into a new df 
 # NAs were not excluded 
 
 ```
@@ -86,26 +88,33 @@ add_aei_df <- cbind(fulldf_aei, ae_index) # add the index into a new df
 Drop NA observations when needed
 ```{r dropNAsindataframe}
 #Create a new data.frame that only has rows w/o NAs
-add_aei_df_dropnas <- na.omit(fulldf_aei) # 262/293 municipalities included 
+add_aei_df_dropnas <- na.omit(rawdf_aei) # 262/293 municipalities included 
 
 ```
 
 
 ###Check for scale consistency - Chronbach's alpha
 ```{r}
-#alpha(ae_index)
-####### Whaaat? Why is it returning colours? 
+#  # create df with just index components (no nochem)
+# thisscale <- c(5,8,9,11,12,15,16,17) # calling a selection 
+# df_aei_alpha <- rawdf_aei[, thisscale] # calls out just the index variables 
+# alpha(df_aei_alpha)
+# # is 0.47. Not good. 
+# 
+# thisscale2 <- c(5,8,9,11,12,15,17) # dropped soil 
+# df_aei_alpha2 <- rawdf_aei[, thisscale2] # calls out just the index variables 
+# alpha(df_aei_alpha2) # 0.43 
+# 
+# thisscale3 <- c(5,8,9,11,12,15) # dropped soil and drip
+# df_aei_alpha3 <- rawdf_aei[, thisscale3] # calls out just the index variables 
+# alpha(df_aei_alpha3) # 0.44 again 
+
 ```
 
-
-```{r testing regressions}
-lm_test3 <- lm(ae_index ~ offfarminc + credit + lowincome, add_aei_df)
-
- lm_test3
+Results: 
+scale with nochem was baaaaad. 
 
 
-
-```
 
 ##Resources & Notes 
 
@@ -113,3 +122,6 @@ lm_test3 <- lm(ae_index ~ offfarminc + credit + lowincome, add_aei_df)
 overview: http://www.r-bloggers.com/computing-and-visualizing-pca-in-r/
 cleaning INF values: http://stackoverflow.com/questions/12188509/cleaning-inf-values-from-an-r-dataframe
 * can't use is.infinite for a data.frame 
+
+Help with diagnostics: 
+http://www.ats.ucla.edu/stat/r/dae/rreg.htm
