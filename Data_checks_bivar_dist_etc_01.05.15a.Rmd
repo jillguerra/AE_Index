@@ -11,7 +11,6 @@ output:
 ```{r}
 library(ggplot2)
 library(car) 
-library(dplyr)
 suppressPackageStartupMessages(library(dplyr))
 library(gridExtra) # for grid.arrange 
 library("reshape2")
@@ -30,37 +29,36 @@ fulldf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_01.06.16.csv", qu
 ```
 
 ###Reshape data 
-```{r}
-# this may be useful down the road but not using at the moment. 
-aei_melted <- melt(fulldf_aei) # new dataframe with melted data 
-aes_index_var <- c("nochem", "croprot", "covercrop", "apm", "noconvtill", "directplanting", "lowtill", "drip") # drop of just index variables 
-aes_socecon_var <- c("lowincome", "offfarminc", "association", "credit", "regtech", "famlab")# group of just the social and economic variables 
-
-####### WORKING ON THIS 
-aei_meltedtest <- melth(fulldf_aei, id.var)
-test <- c("nochem", "croprot", "covercrop")
-aei_melted2 <- aei_melted %>% 
-  filter(variable %in% test) # new dataframe with just the index variables 
-
-(ggplot(aei_melted2, aes(X, y = value, colour = variable)) + 
-  geom_point() +
-  geom_smooth()) # graph works. But now I really know that this graph should be showing the fitted values not the points. 
-
-# want to use this! 
-(ggplot(aei_melted, aes(x=lifeExp, fill=region)) +
-   geom_density(binwidth=.5, alpha=.5, position="identity") +
-  coord_flip() + 
-  facet_grid(. ~ year) +
-  ggtitle("Density of life expectancy by year in the Americas") +
-  theme(axis.ticks = element_blank(), axis.text.x = element_blank()))  
-
-
-# not sure how to use this because the x variable doesn't make sense 
+```{r, echo=FALSE}
+# # this may be useful down the road but not using at the moment. 
+# aei_melted <- melt(fulldf_aei) # new dataframe with melted data 
+# aes_index_var <- c("nochem", "croprot", "covercrop", "apm", "noconvtill", "directplanting", "lowtill", "drip") # drop of just index variables 
+# aes_socecon_var <- c("lowincome", "offfarminc", "association", "credit", "regtech", "famlab")# group of just the social and economic variables 
+# 
+# ####### WORKING ON THIS 
+# aei_meltedtest <- melth(fulldf_aei, id.var)
+# test <- c("nochem", "croprot", "covercrop")
+# aei_melted2 <- aei_melted %>% 
+#   filter(variable %in% test) # new dataframe with just the index variables 
+# 
+# (ggplot(aei_melted2, aes(X, y = value, colour = variable)) + 
+#   geom_point() +
+#   geom_smooth()) # graph works. But now I really know that this graph should be showing the fitted values not the points. 
+# 
+# # want to use this! 
+# (ggplot(aei_melted, aes(x=lifeExp, fill=region)) +
+#    geom_density(binwidth=.5, alpha=.5, position="identity") +
+#   coord_flip() + 
+#   facet_grid(. ~ year) +
+#   ggtitle("Density of life expectancy by year in the Americas") +
+#   theme(axis.ticks = element_blank(), axis.text.x = element_blank()))  
+# 
+# # not sure how to use this because the x variable doesn't make sense 
 
 ```
 
 ###Checking distribution 
-```{r}
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
 # loop to look at the distributions for all variables. It currently works. Saves all individual graphs in png files 
 # nm <- names(fulldf_aei[,3:18]) # calls all the AEI variables 
 # for (i in seq_along(nm)) {
@@ -75,27 +73,57 @@ aei_melted2 <- aei_melted %>%
 # do.call(gridExtra::grid.arrange, gl) 
 
 #histograms
-hist(fulldf_aei$nochem)
-hist(fulldf_aei$usefert)
-hist(fulldf_aei$orgcomp)
-hist(fulldf_aei$nitchem)
-hist(fulldf_aei$notnitchem)
-hist(fulldf_aei$manure)
-hist(fulldf_aei$Innoculents)
-hist(fulldf_aei$croprot)
-hist(fulldf_aei$covercrop)
-hist(fulldf_aei$apm)
-hist(fulldf_aei$noconvtill)
-hist(fulldf_aei$directplanting)
-hist(fulldf_aei$lowtill)
-hist(fulldf_aei$drip)
-hist(fulldf_aei$lowincome) 
-hist(fulldf_aei$offfarminc)
-hist(fulldf_aei$credit)
-hist(fulldf_aei$associated)
-hist(fulldf_aei$famlab)
-hist(fulldf_aei$regtech)
+a <- ggplot(fulldf_aei, aes(x = nochem)) +
+ geom_histogram()
+b <- ggplot(fulldf_aei, aes(x = usefert)) +
+ geom_histogram()
+c <- ggplot(fulldf_aei, aes(x = orgcomp)) +
+ geom_histogram()
+d <- ggplot(fulldf_aei, aes(x = manure)) +
+ geom_histogram()
+e <- ggplot(fulldf_aei, aes(x = nitchem)) +
+ geom_histogram()
+f <- ggplot(fulldf_aei, aes(x = notnitchem)) +
+ geom_histogram()
+g <- ggplot(fulldf_aei, aes(x = covercrop)) +
+ geom_histogram()
+h <- ggplot(fulldf_aei, aes(x = Innoculents)) +
+ geom_histogram()
+i <- ggplot(fulldf_aei, aes(x = croprot)) +
+ geom_histogram()
+j <- ggplot(fulldf_aei, aes(x = noconvtill)) +
+ geom_histogram()
+k <- ggplot(fulldf_aei, aes(x = directplanting)) +
+ geom_histogram()
+l <- ggplot(fulldf_aei, aes(x = lowtill)) +
+ geom_histogram()
+m <- ggplot(fulldf_aei, aes(x = soil)) +
+ geom_histogram()
+n <- ggplot(fulldf_aei, aes(x = drip)) +
+ geom_histogram()
+o <- ggplot(fulldf_aei, aes(x = apm)) +
+ geom_histogram()
+p <- ggplot(fulldf_aei, aes(x = famlab)) +
+ geom_histogram()
+q <- ggplot(fulldf_aei, aes(x = associated)) +
+ geom_histogram()
+r <- ggplot(fulldf_aei, aes(x = lowincome)) +
+ geom_histogram()
+s <- ggplot(fulldf_aei, aes(x = regtech)) +
+ geom_histogram()
+t <- ggplot(fulldf_aei, aes(x = credit)) +
+ geom_histogram()
+u <- ggplot(fulldf_aei, aes(x = offfarminc)) +
+ geom_histogram()
+
+grid.arrange(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u, ncol=3)
+
+##### Look again at binwidth at some point. Note
+
 ```
+
+####Results: 
+
 
 ###DATA CHECKING 
 ```{r, results="hide"}
@@ -103,7 +131,7 @@ hist(fulldf_aei$regtech)
 df_onlynum <- fulldf_aei[,3:(ncol(fulldf_aei))] # drop the first two columns 
 
 #skewness 
-skew <- apply(df_onlynum, 2, skewness, na.rm=TRUE) # call correct df, 2 means looking at columsn (1 would indicate looking rows), skewness is the function applied, ignore NAs 
+skew <- apply(df_onlynum, 2, skewness, na.rm=TRUE) # call correct df, 2 means looking at columns (1 would indicate looking rows), skewness is the function applied, ignore NAs 
 
 #kurtosis
 kurt <- apply(df_onlynum, 2, kurtosis, na.rm=TRUE) # df, looking at columns, kurtosis is function, ignore NAs
@@ -114,8 +142,6 @@ variance <- apply(df_onlynum, 2, var, na.rm=TRUE)# df, looking at columns, varia
 #standard deviations 
 sd <- apply(df_onlynum, 2, sd, na.rm=TRUE)
 
-#standard error of the mean 
-sd <- apply(df_onlynum, 2, sd, na.rm=TRUE)
 
 # coefficient of variation 
 # CV <- function(mean, sd) {
@@ -130,13 +156,12 @@ sd <- apply(df_onlynum, 2, sd, na.rm=TRUE)
 ```{r, }
 #combine values lists into a dataframe 
 data_checks <- cbind(kurt, skew, variance, sd) 
-knitr::kable(data_checks)
-data_checks
+knitr::kable(data_checks) # nice table with all the data 
+
 ```
 
 ###Checking Bivariate relationships of index components 
-```{r}
-
+```{r, echo=FALSE, warning=FALSE}
 # NOCHEM
 a1 <- ggplot(fulldf_aei, aes(nochem, croprot)) +
   geom_point()+
@@ -165,7 +190,13 @@ a8 <- ggplot(fulldf_aei, aes(nochem, drip)) +
 a9 <- ggplot(fulldf_aei, aes(nochem, usefert)) +
   geom_point() +
   stat_smooth()
-grid.arrange(a1,a2,a3,a4,a5,a6,a7,a8,a9, ncol=3)
+a10 <- ggplot(fulldf_aei, aes(nochem, orgcomp)) +
+  geom_point() +
+  stat_smooth()
+a11 <- ggplot(fulldf_aei, aes(nochem, manure)) +
+  geom_point() +
+  stat_smooth()
+grid.arrange(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11, ncol=3)
 
 
 # CROPROT
@@ -193,7 +224,13 @@ b7 <- ggplot(fulldf_aei, aes(croprot, drip)) +
 b8 <- ggplot(fulldf_aei, aes(croprot, usefert)) +
   geom_point() +
   stat_smooth()
-grid.arrange(b1,b2,b3,b4,b5,b6,b7,b8, ncol=3) # put all the graphs into one grid 
+b9 <- ggplot(fulldf_aei, aes(croprot, orgcomp)) +
+  geom_point() +
+  stat_smooth()
+b10 <- ggplot(fulldf_aei, aes(croprot, manure)) +
+  geom_point() +
+  stat_smooth()
+grid.arrange(b1,b2,b3,b4,b5,b6,b7,b8, b9,b10, ncol=3) # put all the graphs into one grid 
 
 # COVERCROP
 c1 <- ggplot(fulldf_aei, aes(covercrop, apm)) +
@@ -217,7 +254,13 @@ c6 <- ggplot(fulldf_aei, aes(covercrop, drip)) +
 c7 <- ggplot(fulldf_aei, aes(covercrop, usefert)) +
   geom_point() +
   stat_smooth()
-grid.arrange(c1,c2,c3,c4,c5,c6,c7, ncol=3) # put all the graphs into one grid 
+c8 <- ggplot(fulldf_aei, aes(covercrop, orgcomp)) +
+  geom_point() +
+  stat_smooth()
+c9 <- ggplot(fulldf_aei, aes(covercrop, manure)) +
+  geom_point() +
+  stat_smooth()
+grid.arrange(c1,c2,c3,c4,c5,c6,c7,c8,c9, ncol=3) # put all the graphs into one grid 
 
 # APM 
 d1 <- ggplot(fulldf_aei, aes(apm, noconvtill)) +
@@ -238,9 +281,14 @@ d5 <- ggplot(fulldf_aei, aes(apm, drip)) +
 d6 <- ggplot(fulldf_aei, aes(apm, usefert)) +
   geom_point() +
   stat_smooth()
-grid.arrange(d1,d2,d3,d4,d5,d6, ncol=3) # put all the graphs into one grid 
+d7 <- ggplot(fulldf_aei, aes(apm, orgcomp)) +
+  geom_point() +
+  stat_smooth()
+d8 <- ggplot(fulldf_aei, aes(apm, manure)) +
+  geom_point() +
+  stat_smooth()
+grid.arrange(d1,d2,d3,d4,d5,d6,d7,d8, ncol=3) # put all the graphs into one grid 
 
-#skipped a few
 
 #DRIP
 e1 <- ggplot(fulldf_aei, aes(drip, noconvtill)) +
@@ -258,19 +306,40 @@ e4 <- ggplot(fulldf_aei, aes(drip, soil)) +
 e5 <- ggplot(fulldf_aei, aes(drip, usefert)) +
   geom_point() +
   stat_smooth()
+e6 <- ggplot(fulldf_aei, aes(nochem, orgcomp)) +
+  geom_point() +
+  stat_smooth()
+e7 <- ggplot(fulldf_aei, aes(nochem, manure)) +
+  geom_point() +
+  stat_smooth()
 grid.arrange(e1,e2,e3,e4,e5, ncol=3)
+
+#LOWTILL
+f1 <- ggplot(fulldf_aei, aes(lowtill, noconvtill)) +
+  geom_point() +
+  stat_smooth() 
+f2 <- ggplot(fulldf_aei, aes(lowtill, directplanting)) +
+  geom_point() +
+  stat_smooth() 
+f3 <- ggplot(fulldf_aei, aes(lowtill, soil)) +
+  geom_point() +
+  stat_smooth()
+f4 <- ggplot(fulldf_aei, aes(lowtill, usefert)) +
+  geom_point() +
+  stat_smooth()
+grid.arrange(f1,f2,f3,f4, ncol=3)
 
 ```
 
 
 ####Results: 
 
-- very clear relatioship between nochem and fertilizer. 
+- very clear relatioship between nochem and fertilizer use (likely because most fertilizer use is chemical). 
 - some relationship  between fert and covercrop/croprot/apm
 
 
 ###Checking bivariate relationships of SOCECON variables 
-```{r}
+```{r, echo=FALSE, warning=FALSE}
 # CREDIT
 z <- ggplot(fulldf_aei, aes(credit, associated)) +
   geom_point() +
@@ -321,7 +390,7 @@ grid.arrange(x, x1, ncol=2)
 - no other ones are related in any significant way. 
 
 ###Relationship between nochem and SOCECON variables 
-```{r}
+```{r, echo=FALSE, warning=FALSE}
 #NOCHEM & SE VARIABLES
 n <- ggplot(fulldf_aei, aes(nochem, associated)) +
   geom_point() +
@@ -427,52 +496,55 @@ grid.arrange(u1,u2,u3,u4,u5,u6,u7,u8,u9,u10,u11, ncol=3)
 - interesting negative relationship between associatedand credit and nochem. Seems to show that more associatedness and access to credit will actually lead to higher levels of agrichem useage. 
 
 ###Testing to get all on the same graph
-```{r}
-(ggplot(fulldf_aei, aes(x=X)) + 
-  geom_line(aes(y=nochem, color="disp")) + 
-  geom_line(aes(y=drip, color="hp")) + 
-  geom_line(aes(y=lowtill, color="wt")))
+```{r, echo=FALSE}
+# (ggplot(fulldf_aei, aes(x=X)) + 
+#   geom_line(aes(y=nochem, color="disp")) + 
+#   geom_line(aes(y=drip, color="hp")) + 
+#   geom_line(aes(y=lowtill, color="wt")))
 ###### issue right now is that the group aesthetic is off. Need to change stat_bin? 
 
 ```
 
-###Checking for leverage and outliers 
-```{r}
-
-
-```
 
 ###Regression tests with NOCHEM
-```{r}
+```{r, warning=FALSE}
 #REGRESS NO CHEM
 nochem_lm <- lm(nochem ~ offfarminc + credit + lowincome + famlab + regtech + associated, fulldf_aei, , , na.exclude) # regression testing on nochem 
 #na.exclude included because otherwise I cannot add the fitted values into the dataframe because there are lost observations 
 # the spaces are for two other arguments that can be specified. I don't know how else to just leave them as default. 
 
+nochem_lm # the regression results 
+
 fulldf_aei_fit <- fulldf_aei %>% 
   mutate(nochemfit = fitted(nochem_lm)) # insert new column with the fitted values for nochem into a new dataframe that will hold the fitted values 
 
-# plot with fitted values 
+#ASSOCIATED
+# plot with fitted values against associated
 plot_nochemfit <- ggplot(fulldf_aei_fit, aes(x=associated, y = nochemfit)) +
   geom_point() +
   stat_smooth()
 
-#plot with regular values 
+#plot with regular values against assocaited
 plot_nochem <- ggplot(fulldf_aei, aes(associated, nochem)) +
    geom_point() +
    stat_smooth() 
 
 grid.arrange(plot_nochemfit, plot_nochem, ncol = 2)
 
-nochem_lm
 
+#CREDIT
+plot_nochemfit_cred <- ggplot(fulldf_aei_fit, aes(x=credit, y = nochemfit)) +
+  geom_point() +
+  stat_smooth()
+
+#plot with regular values against assocaited
+plot_nochem_cred <- ggplot(fulldf_aei, aes(credit, nochem)) +
+   geom_point() +
+   stat_smooth() 
+
+grid.arrange(plot_nochemfit_cred, plot_nochem_cred, ncol = 2)
 ```
 
-```{r}
-# create graphs to see the 
-
-
-```
 
 ##RESOURCES 
 

@@ -18,7 +18,6 @@ Cooks D
 ```{r}
 library(ggplot2)
 library(car) 
-library(dplyr)
 suppressPackageStartupMessages(library(dplyr))
 library(gridExtra)
 library("reshape2")
@@ -31,7 +30,7 @@ library("MASS")
 rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_01.06.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
 ```
 
-###AEI
+###AEI creation
 ```{r}
 ae_index <- ((rawdf_aei$nochem + rawdf_aei$usefert +rawdf_aei$orgcomp + rawdf_aei$manure + rawdf_aei$croprot + rawdf_aei$covercrop + rawdf_aei$apm + rawdf_aei$lowtill + rawdf_aei$drip)/9) # create index! 
 
@@ -40,6 +39,7 @@ df_aei_omit_nas <- na.omit(df_aei)
 
 ```
 
+###Regression using all Socio-econominc variables
 ```{r testing regressions}
 # full dataset 
 lm_full <- lm(ae_index ~ famlab + lowincome + associated + regtech + credit + offfarminc, df_aei)
@@ -47,6 +47,57 @@ lm_full
 
 ```
 
+###Checking Standardized Residuals
+```{r residuals}
+ 
+
+st_res <- rstandard(lm_full ) #pulls out the standard residuals from the regression
+
+#ASSOCIATED
+plot_lm_full_stred <- ggplot(df_aei_omit_nas, aes(associated, st_res)) +
+  geom_point()
+
+plot_lm_full_stred
+
+#FAMLAB 
+plot_lm_full_stred2 <- ggplot(df_aei_omit_nas, aes(famlab, st_res)) +
+  geom_point()
+
+plot_lm_full_stred2
+
+#CREDIT
+plot_lm_full_stred3 <- ggplot(df_aei_omit_nas, aes(credit, st_res)) +
+  geom_point()
+
+plot_lm_full_stred3
+
+#OFFFARMINCOME
+
+plot_lm_full_stred4 <- ggplot(df_aei_omit_nas, aes(offfarminc, st_res)) +
+  geom_point()
+
+plot_lm_full_stred4
+
+#LOWINCOME
+plot_lm_full_stred5 <- ggplot(df_aei_omit_nas, aes(lowincome, st_res)) +
+  geom_point()
+
+plot_lm_full_stred5
+
+#REGTECH
+plot_lm_full_stred6 <- ggplot(df_aei_omit_nas, aes(regtech, st_res)) +
+  geom_point()
+
+plot_lm_full_stred6
+
+```
+
+####Results:
+- when using ((rawdf_aei$nochem + rawdf_aei$usefert +rawdf_aei$orgcomp + rawdf_aei$manure + rawdf_aei$croprot + rawdf_aei$covercrop + rawdf_aei$apm + rawdf_aei$lowtill + rawdf_aei$drip)/9)
+
+- Only issue: famlab is somewhat heteroskedastic
+
+###Plot residuals, show leverage 
 ```{r diagnostics on full}
 summary(lm_full)
 
@@ -54,10 +105,16 @@ opar <- par(mfrow = c(2,2), oma = c(0, 0, 1.1, 0)) # not quite sure what this do
 plot(lm_full, las = 1) # highlights the observations that may be problematic 
 
 par(opar)
-
+```
+###Cases that may be an issue based on the previous graph 
+```{r}
 # because this first run hightlighted 88, 100, 47, 227 as potential issues, the next line picks them out. 
 df_aei[c(88,100,47,227), 1:2]
 
+```
+
+###Cook's D and Studentized residuals
+```{r}
 cd_full <- cooks.distance(lm_full) # run cook's D looking for leverage and residual
 cd_res <- stdres(lm_full) #  calculate student residuals
 diag_full <- cbind(df_aei_omit_nas, cd_full, cd_res) # add cooks D and student residuals to the dataframe
@@ -69,7 +126,7 @@ diag_full[cd_full > 4/(293-6-1), ] #pull out on the cook's D's that are great th
 ####### here n = 293, k = 6 (6 independent variables, 1 dependent?) 
 # gives back 1,2,10,33,47,70,76,88,100,105,113,118,124,130,131,148,155,170,179,209,212,227,248
 
-#Residuals - 
+#Residuals  
 rabs <- abs(cd_res) # absolute value of the residuals
 diag_full2 <- cbind(diag_full, rabs) # bind these residuals with the previous df
 diag_full2_sorted <- diag_full2[order(-rabs), ]
@@ -79,13 +136,7 @@ diag_full2_sorted[1:10, ] # this shows the largest residuals
 ```
 
 
-
-
-
-
-
-
-
+### Same analysis as above but with NAs omitted 
 ```{r no NAs}
 # no observations with NAs
 lm_na_omitted <- lm(ae_index ~ famlab + lowincome + associated + regtech + credit + offfarminc, df_aei_omit_nas) # testing if NAs are omitted. 
@@ -101,8 +152,8 @@ par(opar)
 
 ```{r subset}
 # get a subset showing all the observations with NA values 
-new_DF <- subset(df_aei, is.na(df_aei$ae_index))
-subset()
+# new_DF <- subset(df_aei, is.na(df_aei$ae_index))
+# subset()
 
 # almost all NAs in the ae_index are driven by drip irrigation 
 ```
