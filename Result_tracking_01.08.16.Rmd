@@ -5,7 +5,24 @@ date: "January 8, 2016"
 output: html_document
 ---
 
-The current results 
+### Notes Jan 13 
+
+####Drop all municipalities that have less than 50 farms. That means: 
+Bombinhas - 4202453
+Balneario Camburiu - 4202008
+Itapoa - 4208450
+Balneario Barra do Sul - 4202057
+Balneario Arroio da Silva - 4201950
+Guabiruba - 4206306
+Justification: this is ok because of the law of small numbers 
+
+####Drop variables that are very strange 
+soil
+drip
+noconvtill 
+
+
+###The current results (Jan 11)
 
 - some heavy skew & kurtosis (look at excel sheet)
 - very clear negativerelatioship between nochem and fertilizer. 

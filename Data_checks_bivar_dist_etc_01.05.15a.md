@@ -460,10 +460,6 @@ grid.arrange(plot_nochemfit_cred, plot_nochem_cred, ncol = 2)
 ![](Data_checks_bivar_dist_etc_01.05.15a_files/figure-html/unnamed-chunk-13-2.png) 
 
 
-```r
-# create graphs to see the 
-```
-
 ##RESOURCES 
 
 

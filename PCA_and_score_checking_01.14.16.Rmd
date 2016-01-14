@@ -1,0 +1,187 @@
+---
+title: "Data cleaning"
+author: "Jill Guerra"
+date: "January 14, 2016"
+output: 
+  html_document:
+    keep_md: true 
+---
+
+```{r loading packages}
+library(ggplot2)
+suppressPackageStartupMessages(library(dplyr))
+library(gridExtra) # for grid.arrange 
+library("moments") # for skew & kurtosis
+library(knitr) # for nice tables 
+library(ggbiplot) # for PCA analysis 
+library(devtools) # for PCA analysis as well, I believe 
+library(psych) # needed for chronbach's alpha
+```
+
+```{r load datafile}
+rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_01.14.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
+```
+
+```{r drop observations with <50 farms}
+
+small <- c("4202453", "4202008", "4208450", "4202057", "4201950", "4206306") # these are the codes for the municipalities that have fewer than 50 farms. Names in Result_tracking Rmd. 
+
+'%!in%' <- function(x,y)!('%in%'(x,y)) # sweet function for negating an %in% function 
+
+# drop the municipalities that are held in the 'small' value. 
+df_aei <- rawdf_aei %>% 
+  filter(code %!in% small) %>% 
+  droplevels()  # need to drop levels or else the new data.frame will continue to store the other factors even though they aren't being used. See Homework 5 from stats class for more about this. 
+
+str(df_aei) # check the factor levels. It should match the #obs shown in the global environment section. If it does not then the droplevels() didn't work. 
+
+```
+
+```{r drop observations with NAs}
+df_aei <- df_aei %>% 
+  na.omit() # take out observations that have an NA in any variable 
+
+str(df_aei)
+```
+
+```{r remove variables that are strange}
+df_aei <- subset(df_aei, select = c(code, municipality, orgcomp, manure, covercrop, croprot, apm, straw, lowtill, lowincome, credit, associated, regtech, offfarminc, diverse, famlab)) 
+str(df_aei)
+```
+
+
+##Ag Practices Variables 
+```{r PCA for ag practice variables }
+
+# set the species (how to label the observations)
+aei_species <- df_aei [, 2] # this calls the categorical variable (municipality names)
+
+# log transform 
+log_ag_var <- log(df_aei[,3:9]) # columns with the AE components going to be used in the index 
+
+#Change all infinite values to NAs 
+log_ag_var<- do.call(data.frame,lapply(log_ag_var, function(x) replace(x, is.infinite(x),NA))) # this changes all of them! 
+# ok but the data.frame doesn't have any other things in there (only the components)
+
+#Drop all observations with NA (thus all the infinite because they were previously changed to NA)
+log_ag_var <- na.omit(log_ag_var) # now 233 observations
+
+#Apply PCA - scale. = TRUE is highly advisable, but default is FALSE. 
+log_ag_var_pca <- prcomp(log_ag_var, 
+                      na.action = na.exclude, 
+                      center = TRUE,               
+                      scale. = TRUE) 
+
+print(log_ag_var_pca) # prints the results 
+# ag_PCA_results <- as.data.frame(log_ag_var_pca)
+# can't make prcomp a dataframe
+
+
+# summary method
+summary(log_ag_var_pca)
+
+knitr::kable(log_ag_var_pca) # doesn't work at the moment 
+```
+
+```{r}
+# plot method
+plot(log_ag_var_pca, type = "l") # this won't work unless the NAs are omitted a few lines up. 
+
+plot_ag_pca <- ggbiplot(log_ag_var_pca, obs.scale = 1, var.scale = 1,
+              ellipse = TRUE, 
+              circle = TRUE)
+# original code for this at group = aei_species - but I had to take it out because there were different number of observations. This is because I had to drop values in the log_aei df as prcomp would not work with NAs. 
+
+plot_ag_pca <- plot_ag_pca + scale_color_discrete(name = '') + 
+  theme(legend.direction = 'horizontal', legend.position = 'top')
+
+print(plot_ag_pca)
+```
+
+###Chronbach's alpha for Ag variables 
+```{r}
+ae_scale_var <- df_aei[,3:9]
+alpha(ae_scale_var)
+
+#Currently getting alpha = 0.56 with all of them together
+
+# trying smaller ones 
+# apm,croprot,straw,covercrop
+alpha(df_aei[,5:8]) # alpha 0.67
+
+# manure, lowtill, org comp
+alpha(df_aei[,c(3,4,9)]) # alpha of 0.14 
+
+# apm,croprot,straw
+alpha(df_aei[,6:8] ) # alpha 0.75
+
+# manure and low-till
+alpha(df_aei[,c(4,9)]) # alpha 0.14
+
+#orgcomp, covercrop
+alpha(df_aei[,c(3,5)]) # Nope, its shit 
+
+```
+
+##Regression with the best scale. 
+```{r}
+#Create the index
+agscores <- ((df_aei$apm +df_aei$croprot + df_aei$straw)/3) # testing one score set 
+
+df_aei_scores <- cbind(df_aei, agscores) # bind the scores onto the original dataframe 
+df_aei_scores
+
+lm_PC1_test <-lm(agscores ~ lowincome + credit + associated + regtech + offfarminc + diverse + famlab, df_aei_scores) 
+lm_PC1_test # display regression results
+
+
+```
+
+
+## PCA for socio-economic variables
+```{r PCA for socio-economic variables }
+
+# log transform 
+log_se_var <- log(df_aei[,10:16]) # columns with the AE components going to be used in the index 
+
+#Change all infinite values to NAs 
+log_se_var<- do.call(data.frame,lapply(log_se_var, function(x) replace(x, is.infinite(x),NA))) # this changes all of them! 
+# ok but the data.frame doesn't have any other things in there (only the components)
+
+#Drop all observations with NA (thus all the infinite because they were previously changed to NA)
+log_se_var <- na.omit(log_se_var) # now 233 observations
+
+#Apply PCA - scale. = TRUE is highly advisable, but default is FALSE. 
+log_se_var_pca <- prcomp(log_se_var, 
+                      na.action = na.exclude, 
+                      center = TRUE,               
+                      scale. = TRUE) 
+
+print(log_se_var_pca) # prints the results 
+# ag_PCA_results <- as.data.frame(log_ag_var_pca)
+# can't make prcomp a dataframe
+
+
+# summary method
+summary(log_se_var_pca)
+
+#knitr::kable(log_se_var_pca) # doesn't work at the moment 
+```
+
+```{r}
+# plot method
+plot(log_se_var_pca, type = "l") # this won't work unless the NAs are omitted a few lines up. 
+
+plot_se_pca <- ggbiplot(log_se_var_pca, obs.scale = 1, var.scale = 1,
+              ellipse = TRUE, 
+              circle = TRUE)
+# original code for this at group = aei_species - but I had to take it out because there were different number of observations. This is because I had to drop values in the log_aei df as prcomp would not work with NAs. 
+
+plot_se_ pca <- plot_se_pca + scale_color_discrete(name = '') + 
+  theme(legend.direction = 'horizontal', legend.position = 'top')
+
+print(plot_se_pca)
+```
+
+
+Data wrangling cheat sheet: https://www.rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf

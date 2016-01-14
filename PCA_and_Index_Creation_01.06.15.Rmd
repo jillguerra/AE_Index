@@ -23,7 +23,7 @@ library(psych) # needed for chronbach's alpha
 rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_01.06.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
 ```
 
-###Principle Component Analysis 
+###Principle Component Analysis with all components 
 ALL FROM HERE: http://www.r-bloggers.com/computing-and-visualizing-pca-in-r/
 ```{r}
 
@@ -74,6 +74,36 @@ plot_pca <- plot_pca + scale_color_discrete(name = '') +
 print(plot_pca)
 ```
 
+###PCA with selected components 
+```{r}
+
+# log transform 
+log_aei_2 <- log(rawdf_aei_omit [, c(5,8,9,11,12,14,15)]) # columns with the selected AE components going to be used in the index 
+aei_species_2 <- rawdf_aei_omit [, 2] # this calls the categorical variable 
+# calls the Municipality names.
+
+#Change all infinite values to NAs 
+log_aei_2<- do.call(data.frame,lapply(log_aei_2, function(x) replace(x, is.infinite(x),NA))) # this changes all of them! 
+# ok but the data.frame doesn't have any other things in there (only the components)
+
+#Drop all observations with NA (thus all the infinite because they were previously changed to NA)
+log_aei_2 <- na.omit(log_aei_2) # shows that it is changed from 262 levels down to 139 levels. 
+
+#Apply PCA - scale. = TRUE is highly advisable, but default is FALSE. 
+log_aei_pca_2 <- prcomp(log_aei_2, 
+                      na.action = na.exclude, 
+                      center = TRUE,               
+                      scale. = TRUE) 
+print(log_aei_pca_2)
+
+# plot method
+plot(log_aei_pca, type = "l") # this won't work unless the NAs are omitted a few lines up. 
+
+# summary method
+summary(log_aei_pca)
+
+```
+
 ###AEI with brute force 
 ```{r create AEI with force}
 #### randomly chosen variables 
@@ -108,6 +138,16 @@ add_aei_df_dropnas <- na.omit(rawdf_aei) # 262/293 municipalities included
 # thisscale3 <- c(5,8,9,11,12,15) # dropped soil and drip
 # df_aei_alpha3 <- rawdf_aei[, thisscale3] # calls out just the index variables 
 # alpha(df_aei_alpha3) # 0.44 again 
+
+
+newscale <- c(8,11,12,14,15) # manure, croprotation, apm, direct planting, lowtill 
+df_aei_alpha2 <- rawdf_aei[,newscale]
+alpha(df_aei_alpha2)
+# is 0.53
+
+newscale3 <- c(5,9)
+df_aei_alpha3 <- rawdf_aei[,newscale3]
+alpha(df_aei_alpha3)
 
 ```
 
