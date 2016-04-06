@@ -1,0 +1,139 @@
+---
+title: "Regression_diagnostics_02.22.2016"
+author: "Jill Guerra"
+date: "February 22, 2016"
+output: 
+  html_document:
+    keep_md: true 
+---
+
+```{r load data set}
+rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_02.22.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
+```
+
+```{r drop observations with <50 farms}
+
+small <- c("4202453", "4202008", "4208450", "4202057", "4201950", "4206306") # these are the codes for the municipalities that have fewer than 50 farms. Names in Result_tracking Rmd. 
+
+'%!in%' <- function(x,y)!('%in%'(x,y)) # sweet function for negating an %in% function 
+
+# drop the municipalities that are held in the 'small' value. 
+df_aei <- rawdf_aei %>% 
+  filter(code %!in% small) %>% 
+  droplevels()  # need to drop levels or else the new data.frame will continue to store the other factors even though they aren't being used. See Homework 5 from stats class for more about this. 
+
+str(df_aei) # check the factor levels. It should match the #obs shown in the global environment section. If it does not then the droplevels() didn't work. 
+
+```
+
+```{r drop observations with NAs}
+df_aei <- df_aei %>% 
+  na.omit() %>% 
+  droplevels() # take out observations that have an NA in any variable. There are 14 with NAs. 
+
+str(df_aei)
+```
+```{r First create the index and bind}
+#Create the index with manure
+agscores <- ((df_aei$manure + df_aei$apm + df_aei$croprot + df_aei$straw + df_aei$diverse + df_aei$covercrop)/6) # testing one score set 
+
+# bind the scores onto the original dataframe 
+df_aei_scores <- cbind(df_aei, agscores) 
+df_aei_scores
+
+#regress according to the scores
+lm_agscores <- lm(agscores ~ famlab + lowincome + associated + regtech + credit + offfarminc, df_aei_scores)
+summary(lm_agscores)
+```
+
+```{r Second index without manure }
+#Create the index without manure
+agscores2 <- ((df_aei$apm + df_aei$croprot + df_aei$straw + df_aei$diverse + df_aei$covercrop)/5) # testing one score set 
+
+# bind the scores onto the original dataframe 
+df_aei_scores2 <- cbind(df_aei, agscores2) 
+df_aei_scores2
+
+#regress according to the scores
+lm_agscores2 <- lm(agscores2 ~ famlab + lowincome + associated + regtech + credit + offfarminc, df_aei_scores2)
+summary(lm_agscores)
+# Essentially the same results as without manure. 
+```
+
+
+Source for looking at diagnostics: http://www.statmethods.net/stats/rdiagnostics.html
+
+#Outliers 
+```{r Outliers}
+#This uses the scale that includes manure 
+outlierTest(lm_agscores) 
+qqPlot(lm_agscores, main="QQ Plot") 
+leveragePlots(lm_agscores)
+```
+
+```{r}
+summary(lm_agscores) # regression that i want to use 
+
+opar <- par(mfrow = c(2,2), oma = c(0, 0, 1.1, 0)) # not quite sure what this does but got it from ats.ucla website shown below 
+plot(lm_agscores, las = 1) # highlights the observations that may be problematic 
+# for this run it is: 1, 10, 31, 109, 206,287
+
+par(opar)
+
+```
+
+Results show: 
+- Normal QQ: shows normality 
+- Residuals vs. Fitted: Generally ok. (need to see a band around the horizontal line) 10, 31, 109 higlighted. 
+- Scale- Location: no trend to the residuals - this is what we want. However the same cases highlighted in as the residuals vs. fitted plot 
+- Residuals vs. Leverage: fairly symetrical around zero - good. 
+
+```{r Cooks D }
+cd_full <- cooks.distance(lm_agscores) # run cook's D looking for leverage and residual
+cd_res <- stdres(lm_agscores) #  calculate student residuals
+diag_full <- cbind(df_aei_scores, cd_full, cd_res) # add cooks D and student residuals to the dataframe
+
+
+#Cook's D 
+diag_full[cd_full > 4/(273-7-1), ] #pull out on the cook's D's that are great than 
+####### here n = 273, k = 6 (6 independent variables, 1 dependent?) 
+####### Is this right? May have the wrong degress of freedom 
+#If so: 1,10,13,31,62,69,109,125,150,156,160,206,228,260,272,287
+# if it is 7 the same cases were pulled out. 
+
+
+#Residuals  
+rabs <- abs(cd_res) # absolute value of the residuals
+diag_full2 <- cbind(diag_full, rabs) # bind these residuals with the previous df
+diag_full2_sorted <- diag_full2[order(-rabs), ]
+diag_full2_sorted[1:10, ] # this shows the largest residuals 
+# turn out to be 1,10,13,31,109,150,156,232,260,287
+
+```
+Therefore based on these analyises: 
+Would need to remove:
+1,10,13,31,109,150,156,206,232,260,287
+Which are: 
+4200051
+4200754
+4201000
+4202206
+4207650
+4210704
+4211108
+4215109
+4217006
+4218905
+4219853
+
+
+```{r filter out the bad observations}
+
+df_aei_scores_filtered <- df_aei_scores[-c(1, 10, 13, 31, 109, 150, 156, 206, 232, 260, 287), ] # this points ot the rows that you want to delete. Not columns 
+
+df_aei_scores_filtered <- df_aei_scores %>% 
+  filter(code != c("4200051", "4200754", "4201000", "4202206", "4207650", "4210704", "4211108", "4215109", "4217006", "4218905", "4219853"))
+
+
+```
+

@@ -5,6 +5,34 @@ date: "January 8, 2016"
 output: html_document
 ---
 
+
+
+# Feb 22 
+- new file brought in with just the variables I want 
+- Took out all municipalities under 50 farmers as well as any municipalities that had missing variables. 
+- removed all NA observations
+- ran diagnostics which showed that obs: 1,10,13,31,109,150,156,232,260,287 were no good (outlier, leverage etc.)
+
+
+## Notes Feb 9 
+
+I ran a chronbach's alpha on a scale consisting of cover crop, crop rotation, production diversity, apm, org compost, manure and straw mulch. The result was 0.71.This was after dropping the municipalities with <50 farms, omitting observations with  nas included 
+
+I tried the PCA as well but probably not useful 
+
+
+###Notes Jan 15 
+Things to look into 
+- household size (this could relate to the family labour variable). Acknowledging that there is little off farm labour available, then if family size is still small then labour could be a constraint.rina 
+- look into soil composition in the region (what is really necessary to grow there?)
+- maybe ask Carla 
+
+Soil types as per the link in evernote document 
+Lages - C (Cambissolo)
+Correia Pinto - C, R (Cambissolo, Rigossolo)
+Curitibanos - C, R, TB (Cambissolo, Rigossolo, Terra Bruna Estructurada)
+
+
 ### Notes Jan 13 
 
 ####Drop all municipalities that have less than 50 farms. That means: 

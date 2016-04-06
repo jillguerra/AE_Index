@@ -1,0 +1,96 @@
+---
+title: "Individual regressions"
+author: "Jill Guerra"
+date: "February 22, 2016"
+output: 
+  html_document:
+    keep_md: true 
+---
+
+
+This file will look individual regressions of agroeco practices and socioeconomic variables 
+
+```{r packages }
+library(ggplot2)
+suppressPackageStartupMessages(library(dplyr))
+library(gridExtra) # for grid.arrange 
+library("moments") # for skew & kurtosis
+library(knitr) # for nice tables 
+library(ggbiplot) # for PCA analysis 
+library(devtools) # for PCA analysis as well, I believe 
+library(psych) # needed for chronbach's alpha
+#install.packages("stargazer")
+library(stargazer)
+library(car) # for regression diagnostics 
+library("MASS")
+```
+
+```{r load data set}
+rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_02.22.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
+```
+
+```{r drop observations with <50 farms}
+
+small <- c("4202453", "4202008", "4208450", "4202057", "4201950", "4206306") # these are the codes for the municipalities that have fewer than 50 farms. Names in Result_tracking Rmd. 
+
+'%!in%' <- function(x,y)!('%in%'(x,y)) # sweet function for negating an %in% function 
+
+# drop the municipalities that are held in the 'small' value. 
+df_aei <- rawdf_aei %>% 
+  filter(code %!in% small) %>% 
+  droplevels()  # need to drop levels or else the new data.frame will continue to store the other factors even though they aren't being used. See Homework 5 from stats class for more about this. 
+
+str(df_aei) # check the factor levels. It should match the #obs shown in the global environment section. If it does not then the droplevels() didn't work. 
+
+```
+
+```{r drop observations with NAs}
+df_aei <- df_aei %>% 
+  na.omit() %>% 
+  droplevels() # take out observations that have an NA in any variable. There are 14 with NAs. 
+
+str(df_aei)
+```
+
+```{r scale}
+ae_scale_test <- df_aei[,c(4:9)] # this one looks the best. 
+alpha(ae_scale_test)
+# this currently gets a 0.7 
+
+```
+
+```{r regressions for each agroeco}
+#Compost
+lm_orgcomp <- lm(orgcomp ~ famlab + lowincome + associated + regtech + credit + offfarminc, df_aei)
+summary(lm_orgcomp)
+# None significant - removed from index. 
+
+#manure 
+lm_manure <- lm(manure ~ famlab + lowincome + associated + regtech + credit + offfarminc, df_aei)
+summary(lm_manure)
+
+#Covercrop 
+lm_covercrop <- lm(covercrop ~ famlab + lowincome + associated + regtech + credit + offfarminc, df_aei)
+summary(lm_covercrop)
+
+#croprot 
+lm_croprot <- lm(croprot ~ famlab + lowincome + associated + regtech + credit + offfarminc, df_aei)
+summary(lm_croprot)
+
+#apm
+lm_apm <- lm(apm ~ famlab + lowincome + associated + regtech + credit + offfarminc, df_aei)
+summary(lm_apm)
+
+#diverse
+lm_diverse <- lm(diverse ~ famlab + lowincome + associated + regtech + credit + offfarminc, df_aei)
+summary(lm_diverse)
+
+#straw
+lm_straw <- lm(straw ~ famlab + lowincome + associated + regtech + credit + offfarminc, df_aei)
+summary(lm_straw)
+
+#
+```
+
+
+

@@ -1,0 +1,214 @@
+---
+title: "Scale_creation_and_visualization"
+author: "Jill Guerra"
+date: "February 9, 2016"
+output: 
+  html_document:
+    keep_md: true 
+---
+
+This document covers the creation of a scale, chronbach's alpha on the scale, visualization of the scale across municipalities and general bivariate relationships. 
+
+```{r packages }
+library(ggplot2)
+suppressPackageStartupMessages(library(dplyr))
+library(gridExtra) # for grid.arrange 
+library("moments") # for skew & kurtosis
+library(knitr) # for nice tables 
+library(ggbiplot) # for PCA analysis 
+library(devtools) # for PCA analysis as well, I believe 
+library(psych) # needed for chronbach's alpha
+```
+
+```{r load data set}
+rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_02.22.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
+```
+
+```{r drop observations with <50 farms}
+
+small <- c("4202453", "4202008", "4208450", "4202057", "4201950", "4206306") # these are the codes for the municipalities that have fewer than 50 farms. Names in Result_tracking Rmd. 
+
+'%!in%' <- function(x,y)!('%in%'(x,y)) # sweet function for negating an %in% function 
+
+# drop the municipalities that are held in the 'small' value. 
+df_aei <- rawdf_aei %>% 
+  filter(code %!in% small) %>% 
+  droplevels()  # need to drop levels or else the new data.frame will continue to store the other factors even though they aren't being used. See Homework 5 from stats class for more about this. 
+
+str(df_aei) # check the factor levels. It should match the #obs shown in the global environment section. If it does not then the droplevels() didn't work. 
+
+```
+
+```{r drop observations with NAs}
+df_aei <- df_aei %>% 
+  na.omit() %>% 
+  droplevels() # take out observations that have an NA in any variable 
+
+str(df_aei)
+```
+
+###Chronbach's alpha for Ag variables 
+```{r}
+
+#columns from current dataset:
+# orgcomp = 5, manure = 8, covercrop = 9, croprot = 11, apm = 12, straw = 18, diverse = 25
+#ae_scale_var <- df_aei[,c(5,8,9,11,12,18,25)]
+#alpha(ae_scale_var) OLD 
+
+ae_scale_test <- df_aei[,c(3:7,14)] # this one looks the best. 
+alpha(ae_scale_test)
+
+# 
+ae_scale_TEST <-df_aei[,c(9,11,12,18)] # this shows that the alpha for this is 0.64 without diverse 
+alpha(ae_scale_TEST)
+```
+      
+
+```{r create the index and bind}
+#Create the index with production diversity
+agscores <- ((df_aei$apm +df_aei$croprot + df_aei$straw + df_aei$diverse + df_aei$covercrop)/5) # testing one score set 
+
+# bind the scores onto the original dataframe 
+df_aei_scores <- cbind(df_aei, agscores) 
+df_aei_scores
+```
+
+### frames with histograms 
+```{r}
+a <- ggplot(df_aei, aes(x = covercrop)) +
+ geom_histogram()
+b <- ggplot(df_aei, aes(x = croprot)) +
+ geom_histogram()
+c <- ggplot(df_aei, aes(x = orgcomp)) +
+ geom_histogram()
+d <- ggplot(df_aei, aes(x = manure)) +
+ geom_histogram()
+e <- ggplot(df_aei, aes(x = apm)) +
+ geom_histogram()
+f <- ggplot(df_aei, aes(x = diverse)) +
+ geom_histogram()
+g <- ggplot(df_aei, aes(x = straw)) +
+ geom_histogram()
+
+p <- ggplot(df_aei, aes(x = famlab)) +
+ geom_histogram()
+q <- ggplot(df_aei, aes(x = associated)) +
+ geom_histogram()
+r <- ggplot(df_aei, aes(x = lowincome)) +
+ geom_histogram()
+s <- ggplot(df_aei, aes(x = regtech)) +
+ geom_histogram()
+t <- ggplot(df_aei, aes(x = credit)) +
+ geom_histogram()
+u <- ggplot(df_aei, aes(x = offfarminc)) +
+ geom_histogram()
+
+# note that the alphabet is split because I took this from a previous file 
+grid.arrange(a,b,c,d,e,f,g,p,q,r,s,t,u, ncol=3)
+
+```
+
+```{r data checks}
+# create dataframe without the first two columns because they aren't numbers 
+df_onlynum <- df_aei[,3:(ncol(df_aei))] # drop the first two columns 
+
+#skewness 
+skew <- apply(df_onlynum, 2, skewness, na.rm=TRUE) # call correct df, 2 means looking at columns (1 would indicate looking rows), skewness is the function applied, ignore NAs 
+
+#kurtosis
+kurt <- apply(df_onlynum, 2, kurtosis, na.rm=TRUE) # df, looking at columns, kurtosis is function, ignore NAs
+
+#variance 
+variance <- apply(df_onlynum, 2, var, na.rm=TRUE)# df, looking at columns, variance is function, ignore NAs
+
+```
+
+###Create table with values for data checks
+```{r, }
+#combine values lists into a dataframe 
+data_checks <- cbind(kurt, skew, variance) 
+knitr::kable(data_checks) # nice table with all the data 
+
+```
+
+# Correlation checks 
+```{r}
+#low income, family lab correlation check = NONE 
+inc_lab <- ggplot(df_aei, aes(x=lowincome, y = famlab)) +
+  geom_point() +
+  stat_smooth()
+inc_lab
+cor(df_aei$lowincome, df_aei$famlab)
+
+#low income, credit correlation check = NONE 
+inc_cred <- ggplot(df_aei, aes(x=lowincome, y = credit)) +
+  geom_point() +
+  stat_smooth()
+inc_cred
+
+cor(df_aei$lowincome, df_aei$credit)
+
+#credit, family lab correlation check = WEAK RELATIONSHIP
+cred_lab <- ggplot(df_aei, aes(x=credit, y = famlab)) +
+  geom_point() +
+  stat_smooth()
+cred_lab
+
+cor(df_aei$credit, df_aei$famlab)
+
+#tech, associated correlation check = WEAK RELATIONSHIP 
+tech_assoc <- ggplot(df_aei, aes(x=regtech, y = associated)) +
+  geom_point() +
+  stat_line()
+tech_assoc
+
+cor(df_aei$regtech, df_aei$associated)
+
+# diverse, credit = MODERATE-STRONG RELATIONSHIP
+cor(df_aei$diverse, df_aei$credit)
+```
+
+MAPS! 
+link to blog using brazilian municipalities shapefile 
+https://dioferrari.wordpress.com/2014/11/27/plotting-maps-using-r-example-with-brazilian-municipal-level-data/
+
+```{r regression with each separate}
+lm_sep <- lm(agscores ~ lowincome + credit + regtech + associated, df_aei_scores)
+lm_sep
+
+```
+
+```{r regression 2x2}
+lm_2by2_1 <- lm(agscores ~ lowincome + credit, df_aei_scores)
+lm_2by2_1
+
+lm_2by2_2 <- lm(agscores ~ regtech + associated, df_aei_scores)
+lm_2by2_2
+```
+
+
+TESTING scale without Production diversity 
+
+```{r create the index and bind}
+#Create the index with production diversity
+agscores2 <- ((df_aei$apm + df_aei$croprot + df_aei$straw + df_aei$covercrop)/5) # testing one score set 
+
+# bind the scores onto the original dataframe 
+df_aei_scores2 <- cbind(df_aei, agscores2) 
+df_aei_scores2
+```
+
+```{r regression with each separate}
+lm_sep <- lm(agscores2 ~ lowincome + credit + regtech + associated, df_aei_scores2)
+lm_sep
+
+```
+
+```{r regression 2x2}
+lm_2by2_1 <- lm(agscores2 ~ lowincome + credit, df_aei_scores)
+lm_2by2_1
+
+lm_2by2_2 <- lm(agscores2 ~ regtech + associated, df_aei_scores2)
+lm_2by2_2
+```
+

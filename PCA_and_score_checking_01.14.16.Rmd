@@ -39,14 +39,15 @@ str(df_aei) # check the factor levels. It should match the #obs shown in the glo
 
 ```{r drop observations with NAs}
 df_aei <- df_aei %>% 
-  na.omit() # take out observations that have an NA in any variable 
+  na.omit() %>% 
+  droplevels() # take out observations that have an NA in any variable 
 
 str(df_aei)
 ```
 
 ```{r remove variables that are strange}
-df_aei <- subset(df_aei, select = c(code, municipality, orgcomp, manure, covercrop, croprot, apm, straw, lowtill, lowincome, credit, associated, regtech, offfarminc, diverse, famlab)) 
-str(df_aei)
+# df_aei <- subset(df_aei, select = c(code, municipality, orgcomp, manure, covercrop, croprot, apm, straw, lowtill, lowincome, credit, associated, regtech, offfarminc, diverse, famlab)) 
+# str(df_aei)
 ```
 
 
@@ -56,8 +57,10 @@ str(df_aei)
 # set the species (how to label the observations)
 aei_species <- df_aei [, 2] # this calls the categorical variable (municipality names)
 
+#columns:
+# orgcomp = 5, manure = 8, covercrop = 9, croprot = 11, apm = 12, straw = 18, diverse = 25
 # log transform 
-log_ag_var <- log(df_aei[,3:9]) # columns with the AE components going to be used in the index 
+log_ag_var <- log(df_aei[,c(5,8,9,11,12,18,25)]) # columns with the AE components going to be used in the index 
 
 #Change all infinite values to NAs 
 log_ag_var<- do.call(data.frame,lapply(log_ag_var, function(x) replace(x, is.infinite(x),NA))) # this changes all of them! 
@@ -100,7 +103,7 @@ print(plot_ag_pca)
 
 ###Chronbach's alpha for Ag variables 
 ```{r}
-ae_scale_var <- df_aei[,3:9]
+ae_scale_var <- df_aei[,c(5,8,9,11,12,18,25)]
 alpha(ae_scale_var)
 
 #Currently getting alpha = 0.56 with all of them together
@@ -126,12 +129,12 @@ alpha(df_aei[,c(3,5)]) # Nope, its shit
 ##Regression with the best scale. 
 ```{r}
 #Create the index
-agscores <- ((df_aei$apm +df_aei$croprot + df_aei$straw)/3) # testing one score set 
+agscores <- ((df_aei$apm +df_aei$croprot + df_aei$straw + df_aei$diverse + df_aei$covercrop + df_aei$manure + df_aei$orgcomp)/7) # testing one score set 
 
 df_aei_scores <- cbind(df_aei, agscores) # bind the scores onto the original dataframe 
 df_aei_scores
 
-lm_PC1_test <-lm(agscores ~ lowincome + credit + associated + regtech + offfarminc + diverse + famlab, df_aei_scores) 
+lm_PC1_test <-lm(agscores ~ lowincome + credit + associated + regtech + offfarminc +  famlab, df_aei_scores) 
 lm_PC1_test # display regression results
 
 

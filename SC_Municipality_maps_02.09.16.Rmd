@@ -1,0 +1,34 @@
+---
+title: "Municipality_maps"
+author: "Jill Guerra"
+date: "February 9, 2016"
+output: 
+  html_document:
+    keep_md: true 
+---
+```{r}
+library(ggplot2)
+suppressPackageStartupMessages(library(dplyr))
+library(gridExtra) # for grid.arrange 
+#install.packages(maptools)
+library(maptools)
+library(RColorBrewer)
+#install.packages("rgdal")
+library(rgdal)
+
+```
+
+```{r load data }
+
+#Shape file of municipalities in Brazil 
+municBR <- readShapePoly("~/AEI_Index/brazil_municipios_2010/municipios_2010.shp")
+
+#my data 
+rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_01.14.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
+```
+
+```{r merge data}
+
+total_df <- merge(municBR, rawdf_aei)
+```
+

@@ -493,7 +493,7 @@ grid.arrange(u1,u2,u3,u4,u5,u6,u7,u8,u9,u10,u11, ncol=3)
 ####Results: 
 
 
-- interesting negative relationship between associatedand credit and nochem. Seems to show that more associatedness and access to credit will actually lead to higher levels of agrichem useage. 
+- interesting negative relationship between associated and credit and nochem. Seems to show that more associatedness and access to credit will actually lead to higher levels of agrichem useage. 
 
 ###Testing to get all on the same graph
 ```{r, echo=FALSE}

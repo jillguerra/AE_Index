@@ -50,8 +50,7 @@ lm_full
 ###Checking Standardized Residuals
 ```{r residuals}
  
-
-st_res <- rstandard(lm_full ) #pulls out the standard residuals from the regression
+st_res <- rstandard(lm_full) #pulls out the standard residuals from the regression
 
 #ASSOCIATED
 plot_lm_full_stred <- ggplot(df_aei_omit_nas, aes(associated, st_res)) +
