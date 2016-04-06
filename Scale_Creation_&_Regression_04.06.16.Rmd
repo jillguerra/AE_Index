@@ -1,7 +1,7 @@
 ---
-title: "Scale_creation_and_visualization"
+title: "Scale_Regression_Checks"
 author: "Jill Guerra"
-date: "February 9, 2016"
+date: "April 6, 2016"
 output: 
   html_document:
     keep_md: true 
@@ -107,80 +107,6 @@ plot(lm_sep)
 ```
 
 
-###PART 4: DATA CHECKS
-***
-
-#####HISTOGRAMS
-```{r}
-# make sure that this is pulling from the clean dataset (no small farms, no NAs - i.e. the data that is used in the regression) 
-a <- ggplot(df_aei, aes(x = covercrop)) +
- geom_histogram()
-b <- ggplot(df_aei, aes(x = croprot)) +
- geom_histogram()
-# c <- ggplot(df_aei, aes(x = orgcomp)) +
-#  geom_histogram()
-d <- ggplot(df_aei, aes(x = manure)) +
- geom_histogram()
-e <- ggplot(df_aei, aes(x = apm)) +
- geom_histogram()
-f <- ggplot(df_aei, aes(x = diverse)) +
- geom_histogram()
-g <- ggplot(df_aei, aes(x = straw)) +
- geom_histogram()
-
-# p <- ggplot(df_aei, aes(x = famlab)) +
-#  geom_histogram()
-q <- ggplot(df_aei, aes(x = associated)) +
- geom_histogram()
-r <- ggplot(df_aei, aes(x = lowincome)) +
- geom_histogram()
-s <- ggplot(df_aei, aes(x = regtech)) +
- geom_histogram()
-t <- ggplot(df_aei, aes(x = credit)) +
- geom_histogram()
-# u <- ggplot(df_aei, aes(x = offfarminc)) +
-#  geom_histogram()
-
-# note that the alphabet is split because I took this from a previous file 
-grid.arrange(a,b,d,e,f,g,q,r,s,t, ncol=3)
-
-```
-
-##### SKEW, KURT, VARIANCE
-```{r data checks}
-# create dataframe without the first two columns because they aren't numbers 
-df_onlynum <- df_aei[,3:(ncol(df_aei))] # drop the first two columns 
-
-#skewness 
-skew <- apply(df_onlynum, 2, skewness, na.rm=TRUE) # call correct df, 2 means looking at columns (1 would indicate looking rows), skewness is the function applied, ignore NAs 
-
-#kurtosis
-kurt <- apply(df_onlynum, 2, kurtosis, na.rm=TRUE) # df, looking at columns, kurtosis is function, ignore NAs
-
-#variance 
-variance <- apply(df_onlynum, 2, var, na.rm=TRUE)# df, looking at columns, variance is function, ignore NAs
-
-```
-
-```{r table }
-#combine values lists into a dataframe 
-data_checks <- cbind(kurt, skew, variance) 
-knitr::kable(data_checks) # nice table with all the data 
-
-```
-
-##### CORRELATIONS
-```{r}
-cor(df_aei$diverse, df_aei$credit) # = 0.57
-cor(df_aei$diverse, df_aei$regtech) # = NONE
-cor(df_aei$diverse, df_aei$associated) # = 0.4
-cor(df_aei$diverse, df_aei$lowincome) # 0.52
-cor(df_aei$regtech, df_aei_scores$credit) # = 0.39
-cor(df_aei$regtech, df_aei_scores$associated) # = 0.32
-cor(df_aei$credit, df_aei$associated) # = 0.67
-
-```
-Thes correlations point to a moderate-strong relationship between production diversity and credit. So diversification of acitivies requires some access to credit/ 
 
 
 MAPS! 

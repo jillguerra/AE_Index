@@ -5,7 +5,9 @@ date: "January 8, 2016"
 output: html_document
 ---
 
-
+# April 6
+- chronbach alpha for scale with production diversity, covercrop, croprotation, apm, straw, & manure use to is 0.73
+- 
 
 # Feb 22 
 - new file brought in with just the variables I want 
