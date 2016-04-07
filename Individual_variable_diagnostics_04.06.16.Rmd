@@ -5,9 +5,58 @@ date: "April 6, 2016"
 output: html_document
 ---
 This should be used to look at the histograms, spread, variability etc of individual variables 
-###PART 4: DATA CHECKS
+####PART 1: LOAD
 ***
+####PACKAGES
+```{r packages }
+library(ggplot2)
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(gridExtra)) # for grid.arrange 
+suppressPackageStartupMessages(library("moments")) # for skew & kurtosis
+suppressPackageStartupMessages(library(knitr)) # for nice tables 
+suppressPackageStartupMessages(library(ggbiplot)) # for PCA analysis 
+suppressPackageStartupMessages(library(devtools)) # for PCA analysis as well, I believe 
+suppressPackageStartupMessages(library(psych)) # needed for chronbach's alpha
+suppressPackageStartupMessages(library(stats)) 
+```
 
+#### DATA SET UP  - This should be in every file that I am working on)
+```{r load data set}
+rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_02.22.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
+# note that this dataset was updated in a feb 22 version to only have variables that I will be working with 
+```
+
+```{r drop observations with <50 farms, results = 'hide'}
+
+small <- c("4202453", "4202008", "4208450", "4202057", "4201950", "4206306") # these are the codes for the municipalities that have fewer than 50 farms. Names in Result_tracking Rmd. 
+
+'%!in%' <- function(x,y)!('%in%'(x,y)) # sweet function for negating an %in% function 
+
+# drop the municipalities that are held in the 'small' value. 
+df_aei <- rawdf_aei %>% 
+  filter(code %!in% small) %>% 
+  droplevels()  # need to drop levels or else the new data.frame will continue to store the other factors even though they aren't being used. See Homework 5 from stats class for more about this. 
+
+str(df_aei) # check the factor levels. It should match the #obs shown in the global environment section. If it does not then the droplevels() didn't work. 
+
+```
+
+```{r drop observations with NAs}
+na_obs <- df_aei[rowSums(is.na(df_aei)) > 0,] # pulls out new data.frame with just the NA values
+
+na_obs_names <- na_obs[,1]
+
+df_aei <- df_aei %>% 
+  filter(code %!in% na_obs_names) %>% 
+  droplevels()
+
+nlevels(df_aei$municipality) # should be 273! 
+
+```
+
+
+###PART 2: DATA CHECKS
+***
 #####HISTOGRAMS
 ```{r}
 # make sure that this is pulling from the clean dataset (no small farms, no NAs - i.e. the data that is used in the regression) 
@@ -73,9 +122,42 @@ cor(df_aei$diverse, df_aei$credit) # = 0.57
 cor(df_aei$diverse, df_aei$regtech) # = NONE
 cor(df_aei$diverse, df_aei$associated) # = 0.4
 cor(df_aei$diverse, df_aei$lowincome) # 0.52
-cor(df_aei$regtech, df_aei_scores$credit) # = 0.39
-cor(df_aei$regtech, df_aei_scores$associated) # = 0.32
+cor(df_aei$regtech, df_aei$credit) # = 0.39
+cor(df_aei$regtech, df_aei$associated) # = 0.32
 cor(df_aei$credit, df_aei$associated) # = 0.67
-
 ```
+
+#### REGRESSIONS WITH INDIVIDUAL DEPENDENT VARIABLES
+```{r}
+#COVER CROP 
+lm_covercrop <- lm(covercrop ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_covercrop)
+plot(lm_covercrop)
+
+#CROP ROTATION 
+lm_croprot <- lm(croprot ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_croprot)
+plot(lm_croprot)
+
+#MANURE
+lm_manure <- lm(manure ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_manure)
+plot(lm_manure)
+
+#APM
+lm_apm <- lm(apm ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_apm)
+plot(lm_apm)
+
+#DIVERSE
+lm_diverse <- lm(diverse ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_diverse)
+plot(lm_diverse)
+
+#STRAW
+lm_straw <- lm(straw ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_straw)
+plot(lm_straw)
+```
+
 Thes correlations point to a moderate-strong relationship between production diversity and credit. So diversification of acitivies requires some access to credit/ 

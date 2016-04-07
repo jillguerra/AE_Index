@@ -22,6 +22,8 @@ suppressPackageStartupMessages(library(knitr)) # for nice tables
 suppressPackageStartupMessages(library(ggbiplot)) # for PCA analysis 
 suppressPackageStartupMessages(library(devtools)) # for PCA analysis as well, I believe 
 suppressPackageStartupMessages(library(psych)) # needed for chronbach's alpha
+suppressPackageStartupMessages(library(stats)) 
+suppressPackageStartupMessages(library(stargazer)) 
 ```
 
 #### DATA SET UP  - This should be in every file that I am working on)
@@ -46,11 +48,16 @@ str(df_aei) # check the factor levels. It should match the #obs shown in the glo
 ```
 
 ```{r drop observations with NAs}
-df_aei <- df_aei %>% 
-  na.omit() %>% 
-  droplevels() # take out observations that have an NA in any variable 
+na_obs <- df_aei[rowSums(is.na(df_aei)) > 0,] # pulls out new data.frame with just the NA values
 
-str(df_aei)
+na_obs_names <- na_obs[,1]
+
+df_aei <- df_aei %>% 
+  filter(code %!in% na_obs_names) %>% 
+  droplevels()
+
+nlevels(df_aei$municipality) # should be 273! 
+
 ```
 
 ###PART 2: SCALE CREATION 
@@ -62,8 +69,8 @@ This section will define the Agscores scale and bind it to the original datafram
 #columns from current dataset:
 
 # current column numbers for orgcomp (3), manure (4), covercrop (5), croprotation (6), apm(7), production diversity (8) straw(9)
-ae_scale_test <- df_aei[,c(4:9)] # this one looks the best. It excludes organic compost because it as negatively related in the alpha of the scale in which it was included 
-alpha(ae_scale_test)
+ae_scale <- df_aei[,c(4:9)] # this one looks the best. It excludes organic compost because it as negatively related in the alpha of the scale in which it was included 
+alpha(ae_scale)
 # chronbach's is 0.73
 
 ```
@@ -72,22 +79,25 @@ alpha(ae_scale_test)
 #Creating scores
 agscores <- ((df_aei$apm +df_aei$croprot + df_aei$straw + df_aei$manure + df_aei$covercrop + df_aei$diverse)/6) # testing one score set 
 
+str(agscores)
+
 # bind the scores onto the original dataframe but store as a new dataframe
 df_aei_scores <- cbind(df_aei, agscores) 
 df_aei_scores
 ```
 
-###PART 3: REGRESSION
+###PART 3: INITIAL REGRESSIONS
 ***
-#### REGRESSIONS
+#### REGRESSIONS - without any leverage/outliers removed 
 
 Regression with all independent variables 
-```{r regression with each separate}
+```{r regression with each separate1}
+
 lm_sep <- lm(agscores ~ lowincome + credit + regtech + associated, df_aei_scores)
 summary(lm_sep)
 ```
 
-```{r regression 2x2}
+```{r regression 2x21}
 lm_2by2_1 <- lm(agscores ~ lowincome + credit, df_aei_scores)
 summary(lm_2by2_1)
 
@@ -103,11 +113,202 @@ anova(lm_sep)
 PLOT REGRESSION
 ```{r}
 plot(lm_sep)
+```
+
+#### REGRESSIONS WITH INDIVIDUAL DEPENDENT VARIABLES
+```{r}
+#COVER CROP 
+lm_covercrop <- lm(covercrop ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_covercrop)
+plot(lm_covercrop)
+
+#CROP ROTATION 
+lm_croprot <- lm(croprot ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_croprot)
+plot(lm_croprot)
+
+#MANURE
+lm_manure <- lm(manure ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_manure)
+plot(lm_manure)
+
+#APM
+lm_apm <- lm(apm ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_apm)
+plot(lm_apm)
+
+#DIVERSE
+lm_diverse <- lm(diverse ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_diverse)
+plot(lm_diverse)
+
+#STRAW
+lm_straw <- lm(straw ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_straw)
+plot(lm_straw)
+```
+### PART 4: REGRESSION CHECKS 
+***
+
+####RESIDUALS
+```{r residuals}
+ st_res <- rstandard(lm_sep) #pulls out the standard residuals from the regression
+
+#Residuals for all independent variables 
+stres_a <- ggplot(df_aei_scores, aes(associated, st_res)) +
+  geom_point() +
+  stat_smooth()
+
+stres_c <- ggplot(df_aei_scores, aes(credit, st_res)) +
+  geom_point() +
+  stat_smooth()
+
+stres_i <- ggplot(df_aei_scores, aes(lowincome, st_res)) +
+  geom_point() +
+  stat_smooth()
+
+stres_t <- ggplot(df_aei_scores, aes(regtech, st_res)) +
+  geom_point() +
+  stat_smooth()
+
+grid.arrange(stres_a, stres_c, stres_i, stres_t, ncol=2)
+```
+
+#### RESIDUALS & LEVERAGE
+```{r diagnostics on full}
+summary(lm_sep)
+
+opar <- par(mfrow = c(2,2), oma = c(0, 0, 1.1, 0)) # not quite sure what this does but got it from ats.ucla website shown below 
+plot(lm_sep, las = 1) # highlights the observations that may be problematic 
+
+par(opar)
+```
+###LIST OF PROBLEM CASES 
+```{r}
+# Cases identified April 7th with data set excluding small farms and NAs and an ag scale of cover crop, crop rot, apm, manure, straw and diverse
+# enter observation numbers and display the 
+df_aei_scores[c(10,29,58,105,273), 1:2]
+
+```
+###Cook's D and Studentized residuals
+```{r cooks d}
+cd <- cooks.distance(lm_sep) # run cook's D looking for leverage and residual
+sres <- rstandard(lm_sep) #  calculate standardized residuals
+df_diag_sep <- cbind(df_aei_scores, cd, sres) # add cooks D and student residuals to the dataframe
+
+#COOK'S D
+cooks_d <- df_diag_sep[cd > 4/(268), ] #pull out on the cook's D's that are beyond the hypothetical cutoff. Degrees of freedom for lm_sep is 268 (from the summary output)
+
+#RESIDUALS
+rabs <- abs(sres) # absolute value of the residuals
+df_diag_sep <- cbind(df_diag_sep, rabs) # bind these residuals with the previous df
+df_diag_sep <- df_diag_sep[order(-rabs), ] # reorder according to absolute value residuals
+big_residuals <- df_diag_sep[1:10,] # this shows the largest residuals 
+```
+
+####RESULTS 
+```{r tables with residuals and cooks D results}
+ 
+knitr::kable(cooks_d[,c(1, 2, 17)]) 
+knitr::kable(big_residuals[,c(1, 2, 19)])
+```
+
+####LIST OF PROBLEM CASES 
+Municipalities that showed up on more than 1 of the above tables or from the earlier plots 
+```{r}
+prob_cases <- df_aei_scores[c(10, 21,29,58,77,145,246,258,273), 1:2]
+knitr::kable(prob_cases) # nice table of problem cases 
+
+
+```
+
+###PART 5: RESPECIFICATION 
+***
+Rerun the regressions as performed earlier but without the leverage and outliers. Remember that the ag scores are already defined from earlier, so do not need to add again. 
+
+####REMOVE PROBLEM CASES
+```{r}
+prob_cases_codes <- prob_cases[,1] # pull out just the code names of the cases identified in the previous chunk 
+
+rerun_df_aei_scores <- df_aei_scores %>% 
+  filter(code %!in% prob_cases_codes) %>% # remove all cases identified in previous chunk
+  droplevels() # drop factor levels 
+
+str(rerun_df_aei_scores)
+```
+
+#####REGRESSION
+```{r regression with each separate}
+lm_sep_rr <- lm(agscores ~ lowincome + credit + regtech + associated, rerun_df_aei_scores)
+summary(lm_sep_rr)
+```
+
+```{r regression 2x2}
+lm_2by2_1_rr <- lm(agscores ~ lowincome + credit, rerun_df_aei_scores)
+summary(lm_2by2_1_rr)
+
+lm_2by2_2_rr <- lm(agscores ~ regtech + associated, rerun_df_aei_scores)
+summary(lm_2by2_2_rr)
+```
+
+ANOVA 
+```{r}
+anova(lm_sep_rr)
+```
+
+PLOT REGRESSION
+```{r}
+plot(lm_sep_rr)
+```
+
+#### REGRESSIONS WITH INDIVIDUAL DEPENDENT VARIABLES
+```{r}
+#COVER CROP 
+lm_covercrop_rr <- lm(covercrop ~ lowincome + credit + regtech + associated, rerun_df_aei_scores)
+summary(lm_covercrop_rr)
+plot(lm_covercrop_rr)
+
+#CROP ROTATION 
+lm_croprot_rr <- lm(croprot ~ lowincome + credit + regtech + associated, rerun_df_aei_scores)
+summary(lm_croprot_rr)
+plot(lm_croprot_rr)
+
+#MANURE
+lm_manure_rr <- lm(manure ~ lowincome + credit + regtech + associated, rerun_df_aei_scores)
+summary(lm_manure_rr)
+plot(lm_manure_rr)
+
+#APM
+lm_apm_rr <- lm(apm ~ lowincome + credit + regtech + associated, rerun_df_aei_scores)
+summary(lm_apm_rr)
+plot(lm_apm_rr)
+
+#DIVERSE
+lm_diverse_rr <- lm(diverse ~ lowincome + credit + regtech + associated, rerun_df_aei_scores)
+summary(lm_diverse_rr)
+plot(lm_diverse_rr)
+
+#STRAW
+lm_straw_rr <- lm(straw ~ lowincome + credit + regtech + associated, rerun_df_aei_scores)
+summary(lm_straw_rr)
+plot(lm_straw_rr)
 
 ```
 
 
+TESTING REGRESSION TABLES
+```{r, results = "hide"}
+stargazer(lm_sep, lm_2by2_1, lm_2by2_2, type = "text", title="Linear Model - FULL ", digits=1, out="Regression_Tables_Using_Score_04.07.16.txt")
 
+stargazer(lm_covercrop, lm_croprot, lm_manure, lm_straw, lm_diverse, lm_apm, type = "text", title="Linear Model - FULL ", digits=1, out="Regression_Tables_Individ_Indep_04.07.16.txt")
+
+stargazer(lm_sep_rr, lm_2by2_1_rr, lm_2by2_2_rr, type = "text", title="Linear Model - FULL ", digits=1, out="Regression_Tables_Using_Score_RR_04.07.16.txt")
+
+stargazer(lm_covercrop, lm_croprot_rr, lm_manure_rr, lm_straw_rr, lm_diverse_rr, lm_apm_rr, type = "text", title="Linear Model - FULL ", digits=1, out="Regression_Tables_Individ_Indep_04.07.16.txt")
+```
+
+
+Similar results as before: credit still the biggest predictor. 
 
 MAPS! 
 link to blog using brazilian municipalities shapefile 
