@@ -32,7 +32,7 @@ suppressPackageStartupMessages(library(stargazer))
 #### DATA SET UP  - This should be in every file that I am working on)
 
 ```r
-rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_02.22.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
+rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_04.10.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
 # note that this dataset was updated in a feb 22 version to only have variables that I will be working with 
 ```
 
@@ -125,6 +125,7 @@ str(agscores)
 # bind the scores onto the original dataframe but store as a new dataframe
 df_aei_scores <- cbind(df_aei, agscores) 
 df_aei_scores
+write.csv(df_aei_scores, file = "df_aei_scores.csv")
 ```
 
 ###PART 3: INITIAL REGRESSIONS
@@ -134,8 +135,41 @@ df_aei_scores
 Regression with all independent variables 
 
 ```r
-lm_sep <- lm(agscores ~ lowincome + credit + regtech + associated, df_aei_scores)
-summary(lm_sep)
+lm_sep1 <- lm(agscores ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei_scores)
+summary(lm_sep1)
+```
+
+```
+## 
+## Call:
+## lm(formula = agscores ~ lowincome + credit + regtech + associated + 
+##     famlab + offfarminc, data = df_aei_scores)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -27.5854  -6.8843   0.2962   6.2988  25.3625 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) -20.80806    6.25657  -3.326 0.001006 ** 
+## lowincome     0.11793    0.07288   1.618 0.106832    
+## credit        0.47731    0.04890   9.761  < 2e-16 ***
+## regtech       0.10743    0.05214   2.061 0.040316 *  
+## associated    0.04789    0.04148   1.155 0.249317    
+## famlab        0.21090    0.05582   3.778 0.000195 ***
+## offfarminc    0.17075    0.06183   2.762 0.006154 ** 
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 9.698 on 266 degrees of freedom
+## Multiple R-squared:  0.4995,	Adjusted R-squared:  0.4882 
+## F-statistic: 44.24 on 6 and 266 DF,  p-value: < 2.2e-16
+```
+
+
+```r
+lm_sep2 <- lm(agscores ~ lowincome + credit + regtech + associated, df_aei_scores)
+summary(lm_sep2)
 ```
 
 ```
@@ -162,6 +196,7 @@ summary(lm_sep)
 ## Multiple R-squared:  0.4627,	Adjusted R-squared:  0.4546 
 ## F-statistic: 57.69 on 4 and 268 DF,  p-value: < 2.2e-16
 ```
+
 
 
 ```r
@@ -221,7 +256,7 @@ summary(lm_2by2_2)
 ANOVA 
 
 ```r
-anova(lm_sep)
+anova(lm_sep1)
 ```
 
 ```
@@ -229,11 +264,13 @@ anova(lm_sep)
 ## 
 ## Response: agscores
 ##             Df  Sum Sq Mean Sq  F value    Pr(>F)    
-## lowincome    1  1823.8  1823.8  18.1970 2.765e-05 ***
-## credit       1 21052.1 21052.1 210.0475 < 2.2e-16 ***
-## regtech      1   166.7   166.7   1.6634    0.1983    
-## associated   1    84.4    84.4   0.8419    0.3597    
-## Residuals  268 26860.4   100.2                       
+## lowincome    1  1823.8  1823.8  19.3896 1.546e-05 ***
+## credit       1 21052.1 21052.1 223.8141 < 2.2e-16 ***
+## regtech      1   166.7   166.7   1.7724 0.1842281    
+## associated   1    84.4    84.4   0.8971 0.3444332    
+## famlab       1  1123.0  1123.0  11.9389 0.0006397 ***
+## offfarminc   1   717.3   717.3   7.6259 0.0061543 ** 
+## Residuals  266 25020.1    94.1                       
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -241,7 +278,7 @@ anova(lm_sep)
 PLOT REGRESSION
 
 ```r
-plot(lm_sep)
+plot(lm_sep1)
 ```
 
 ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-3-1.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-3-2.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-3-3.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-3-4.png) 
@@ -250,232 +287,257 @@ plot(lm_sep)
 
 ```r
 #COVER CROP 
-lm_covercrop <- lm(covercrop ~ lowincome + credit + regtech + associated, df_aei)
+lm_covercrop <- lm(covercrop ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei)
 summary(lm_covercrop)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = covercrop ~ lowincome + credit + regtech + associated, 
-##     data = df_aei)
+## lm(formula = covercrop ~ lowincome + credit + regtech + associated + 
+##     famlab + offfarminc, data = df_aei)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -23.916 -10.611  -4.086   7.812  54.708 
+## -23.937 -10.253  -4.290   7.724  53.975 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)   
-## (Intercept) 16.11100    5.45742   2.952  0.00344 **
-## lowincome   -0.19195    0.11416  -1.681  0.09386 . 
-## credit       0.16327    0.07303   2.236  0.02619 * 
-## regtech      0.22049    0.08112   2.718  0.00699 **
-## associated  -0.10970    0.06578  -1.668  0.09653 . 
+## (Intercept) 15.03282    9.97574   1.507  0.13301   
+## lowincome   -0.19252    0.11621  -1.657  0.09876 . 
+## credit       0.15879    0.07797   2.037  0.04267 * 
+## regtech      0.21794    0.08313   2.622  0.00925 **
+## associated  -0.11058    0.06613  -1.672  0.09568 . 
+## famlab       0.02427    0.08901   0.273  0.78534   
+## offfarminc  -0.02711    0.09859  -0.275  0.78353   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 15.41 on 268 degrees of freedom
-## Multiple R-squared:  0.09384,	Adjusted R-squared:  0.08032 
-## F-statistic: 6.939 on 4 and 268 DF,  p-value: 2.5e-05
+## Residual standard error: 15.46 on 266 degrees of freedom
+## Multiple R-squared:  0.09443,	Adjusted R-squared:  0.074 
+## F-statistic: 4.623 on 6 and 266 DF,  p-value: 0.0001735
 ```
 
 ```r
-plot(lm_covercrop)
-```
+#plot(lm_covercrop)
 
-![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-1.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-2.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-3.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-4.png) 
-
-```r
 #CROP ROTATION 
-lm_croprot <- lm(croprot ~ lowincome + credit + regtech + associated, df_aei)
+lm_croprot <- lm(croprot ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei)
 summary(lm_croprot)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = croprot ~ lowincome + credit + regtech + associated, 
-##     data = df_aei)
+## lm(formula = croprot ~ lowincome + credit + regtech + associated + 
+##     famlab + offfarminc, data = df_aei)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -30.874  -7.688  -0.005   8.332  32.689 
+## -35.828  -7.223  -0.036   7.819  33.997 
 ## 
 ## Coefficients:
 ##              Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) -13.60719    4.38672  -3.102  0.00213 ** 
-## lowincome     0.29268    0.09176   3.189  0.00159 ** 
-## credit        0.58702    0.05870  10.000  < 2e-16 ***
-## regtech       0.00552    0.06520   0.085  0.93260    
-## associated    0.08715    0.05287   1.648  0.10047    
+## (Intercept) -35.65306    7.85127  -4.541 8.49e-06 ***
+## lowincome     0.24038    0.09146   2.628  0.00908 ** 
+## credit        0.64756    0.06136  10.553  < 2e-16 ***
+## regtech       0.04497    0.06542   0.687  0.49242    
+## associated    0.09575    0.05205   1.840  0.06693 .  
+## famlab        0.20048    0.07005   2.862  0.00455 ** 
+## offfarminc    0.17109    0.07759   2.205  0.02831 *  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 12.39 on 268 degrees of freedom
-## Multiple R-squared:  0.5336,	Adjusted R-squared:  0.5266 
-## F-statistic: 76.65 on 4 and 268 DF,  p-value: < 2.2e-16
+## Residual standard error: 12.17 on 266 degrees of freedom
+## Multiple R-squared:  0.5531,	Adjusted R-squared:  0.5431 
+## F-statistic: 54.88 on 6 and 266 DF,  p-value: < 2.2e-16
 ```
 
 ```r
-plot(lm_croprot)
-```
+#plot(lm_croprot)
 
-![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-5.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-6.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-7.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-8.png) 
-
-```r
 #MANURE
-lm_manure <- lm(manure ~ lowincome + credit + regtech + associated, df_aei)
+lm_manure <- lm(manure ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei)
 summary(lm_manure)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = manure ~ lowincome + credit + regtech + associated, 
-##     data = df_aei)
+## lm(formula = manure ~ lowincome + credit + regtech + associated + 
+##     famlab + offfarminc, data = df_aei)
 ## 
 ## Residuals:
-##     Min      1Q  Median      3Q     Max 
-## -48.419 -18.137  -3.022  20.975  61.058 
+##    Min     1Q Median     3Q    Max 
+## -47.83 -18.63  -2.63  20.36  61.83 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) 51.57144    9.01643   5.720 2.85e-08 ***
-## lowincome   -0.37334    0.18861  -1.979   0.0488 *  
-## credit       0.08569    0.12065   0.710   0.4782    
-## regtech      0.06058    0.13402   0.452   0.6516    
-## associated   0.04284    0.10867   0.394   0.6938    
+##             Estimate Std. Error t value Pr(>|t|)   
+## (Intercept)  7.70805   16.15645   0.477  0.63369   
+## lowincome   -0.47806    0.18821  -2.540  0.01165 * 
+## credit       0.20863    0.12627   1.652  0.09967 . 
+## regtech      0.14057    0.13463   1.044  0.29737   
+## associated   0.06039    0.10710   0.564  0.57336   
+## famlab       0.39406    0.14416   2.734  0.00669 **
+## offfarminc   0.35222    0.15967   2.206  0.02824 * 
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 25.46 on 268 degrees of freedom
-## Multiple R-squared:  0.03086,	Adjusted R-squared:  0.0164 
-## F-statistic: 2.133 on 4 and 268 DF,  p-value: 0.07697
+## Residual standard error: 25.04 on 266 degrees of freedom
+## Multiple R-squared:  0.06929,	Adjusted R-squared:  0.0483 
+## F-statistic: 3.301 on 6 and 266 DF,  p-value: 0.00377
 ```
 
 ```r
-plot(lm_manure)
-```
+#plot(lm_manure)
 
-![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-9.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-10.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-11.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-12.png) 
-
-```r
 #APM
-lm_apm <- lm(apm ~ lowincome + credit + regtech + associated, df_aei)
+lm_apm <- lm(apm ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei)
 summary(lm_apm)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = apm ~ lowincome + credit + regtech + associated, 
-##     data = df_aei)
+## lm(formula = apm ~ lowincome + credit + regtech + associated + 
+##     famlab + offfarminc, data = df_aei)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -26.300 -10.973  -4.134   7.851  70.596 
+## -27.383 -10.960  -3.043   7.787  71.261 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(>|t|)  
-## (Intercept) -5.36690    5.69315  -0.943   0.3467  
-## lowincome    0.21408    0.11909   1.798   0.0734 .
-## credit       0.13575    0.07618   1.782   0.0759 .
-## regtech      0.19116    0.08462   2.259   0.0247 *
-## associated   0.10484    0.06862   1.528   0.1277  
+##              Estimate Std. Error t value Pr(>|t|)   
+## (Intercept) -13.99069   10.31726  -1.356  0.17623   
+## lowincome     0.18489    0.12019   1.538  0.12515   
+## credit        0.19221    0.08063   2.384  0.01784 * 
+## regtech       0.22631    0.08597   2.632  0.00898 **
+## associated    0.11392    0.06840   1.666  0.09695 . 
+## famlab        0.01474    0.09206   0.160  0.87290   
+## offfarminc    0.22314    0.10196   2.188  0.02950 * 
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 16.08 on 268 degrees of freedom
-## Multiple R-squared:  0.1246,	Adjusted R-squared:  0.1115 
-## F-statistic: 9.533 on 4 and 268 DF,  p-value: 3.207e-07
+## Residual standard error: 15.99 on 266 degrees of freedom
+## Multiple R-squared:  0.1401,	Adjusted R-squared:  0.1207 
+## F-statistic: 7.222 on 6 and 266 DF,  p-value: 3.726e-07
 ```
 
 ```r
-plot(lm_apm)
-```
+#plot(lm_apm)
 
-![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-13.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-14.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-15.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-16.png) 
-
-```r
 #DIVERSE
-lm_diverse <- lm(diverse ~ lowincome + credit + regtech + associated, df_aei)
+lm_diverse <- lm(diverse ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei)
 summary(lm_diverse)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = diverse ~ lowincome + credit + regtech + associated, 
-##     data = df_aei)
+## lm(formula = diverse ~ lowincome + credit + regtech + associated + 
+##     famlab + offfarminc, data = df_aei)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -29.731  -6.882  -1.934   6.636  33.752 
+## -21.792  -6.197  -1.204   6.319  43.269 
 ## 
 ## Coefficients:
 ##              Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) -13.30476    3.73066  -3.566 0.000429 ***
-## lowincome     0.70674    0.07804   9.056  < 2e-16 ***
-## credit        0.33097    0.04992   6.630 1.84e-10 ***
-## regtech      -0.03011    0.05545  -0.543 0.587529    
-## associated    0.10193    0.04496   2.267 0.024190 *  
+## (Intercept) -45.75312    6.36961  -7.183 6.85e-12 ***
+## lowincome     0.63727    0.07420   8.589 7.55e-16 ***
+## credit        0.39190    0.04978   7.872 8.85e-14 ***
+## regtech       0.01099    0.05308   0.207  0.83607    
+## associated    0.10968    0.04223   2.597  0.00992 ** 
+## famlab        0.34984    0.05683   6.156 2.74e-09 ***
+## offfarminc    0.11747    0.06295   1.866  0.06311 .  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 10.53 on 268 degrees of freedom
-## Multiple R-squared:  0.5223,	Adjusted R-squared:  0.5151 
-## F-statistic: 73.25 on 4 and 268 DF,  p-value: < 2.2e-16
+## Residual standard error: 9.874 on 266 degrees of freedom
+## Multiple R-squared:  0.5835,	Adjusted R-squared:  0.5741 
+## F-statistic:  62.1 on 6 and 266 DF,  p-value: < 2.2e-16
 ```
 
 ```r
-plot(lm_diverse)
-```
+#plot(lm_diverse)
 
-![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-17.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-18.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-19.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-20.png) 
-
-```r
 #STRAW
-lm_straw <- lm(straw ~ lowincome + credit + regtech + associated, df_aei)
+lm_straw <- lm(straw ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei)
 summary(lm_straw)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = straw ~ lowincome + credit + regtech + associated, 
-##     data = df_aei)
+## lm(formula = straw ~ lowincome + credit + regtech + associated + 
+##     famlab + offfarminc, data = df_aei)
 ## 
 ## Residuals:
-##    Min     1Q Median     3Q    Max 
-## -48.36 -11.93   0.60  10.20  53.41 
+##     Min      1Q  Median      3Q     Max 
+## -45.956 -11.521   0.382  10.478  58.336 
 ## 
 ## Coefficients:
-##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) -22.944185   6.160878  -3.724 0.000239 ***
-## lowincome     0.382806   0.128879   2.970 0.003245 ** 
-## credit        1.192727   0.082441  14.468  < 2e-16 ***
-## regtech      -0.043589   0.091572  -0.476 0.634458    
-## associated    0.008183   0.074255   0.110 0.912337    
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) -52.19232   11.05864  -4.720 3.82e-06 ***
+## lowincome     0.31562    0.12882   2.450   0.0149 *  
+## credit        1.26480    0.08643  14.634  < 2e-16 ***
+## regtech       0.00379    0.09215   0.041   0.9672    
+## associated    0.01816    0.07331   0.248   0.8046    
+## famlab        0.28201    0.09867   2.858   0.0046 ** 
+## offfarminc    0.18766    0.10929   1.717   0.0871 .  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 17.4 on 268 degrees of freedom
-## Multiple R-squared:  0.6509,	Adjusted R-squared:  0.6457 
-## F-statistic: 124.9 on 4 and 268 DF,  p-value: < 2.2e-16
+## Residual standard error: 17.14 on 266 degrees of freedom
+## Multiple R-squared:  0.6636,	Adjusted R-squared:  0.656 
+## F-statistic: 87.44 on 6 and 266 DF,  p-value: < 2.2e-16
 ```
 
 ```r
-plot(lm_straw)
+#plot(lm_straw)
+
+#NOCHEM
+lm_nochem <- lm(nochem ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei)
+summary(lm_nochem)
 ```
 
-![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-21.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-22.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-23.png) ![](Scale_Creation___Regression_04.06.16_files/figure-html/unnamed-chunk-4-24.png) 
+```
+## 
+## Call:
+## lm(formula = nochem ~ lowincome + credit + regtech + associated + 
+##     famlab + offfarminc, data = df_aei)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -28.502 -10.322  -1.438   9.698  44.340 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) 28.84370    9.40089   3.068  0.00238 ** 
+## lowincome    0.30144    0.10951   2.753  0.00632 ** 
+## credit      -0.62495    0.07347  -8.506 1.32e-15 ***
+## regtech     -0.17607    0.07834  -2.248  0.02543 *  
+## associated  -0.12794    0.06232  -2.053  0.04105 *  
+## famlab       0.26363    0.08388   3.143  0.00186 ** 
+## offfarminc   0.39732    0.09290   4.277 2.65e-05 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 14.57 on 266 degrees of freedom
+## Multiple R-squared:  0.629,	Adjusted R-squared:  0.6206 
+## F-statistic: 75.16 on 6 and 266 DF,  p-value: < 2.2e-16
+```
+
+```r
+#plot(lm_nochem)
+```
 ### PART 4: REGRESSION CHECKS 
 ***
 
 ####RESIDUALS
 
 ```r
- st_res <- rstandard(lm_sep) #pulls out the standard residuals from the regression
+ st_res <- rstandard(lm_sep1) #pulls out the standard residuals from the regression
 
 #Residuals for all independent variables 
 stres_a <- ggplot(df_aei_scores, aes(associated, st_res)) +
@@ -494,7 +556,15 @@ stres_t <- ggplot(df_aei_scores, aes(regtech, st_res)) +
   geom_point() +
   stat_smooth()
 
-grid.arrange(stres_a, stres_c, stres_i, stres_t, ncol=2)
+stres_fl <- ggplot(df_aei_scores, aes(famlab, st_res)) +
+  geom_point() +
+  stat_smooth()
+
+stres_of <- ggplot(df_aei_scores, aes(offfarminc, st_res)) +
+  geom_point() +
+  stat_smooth()
+
+grid.arrange(stres_a, stres_c, stres_i, stres_t, stres_fl, stres_of, ncol=2)
 ```
 
 ![](Scale_Creation___Regression_04.06.16_files/figure-html/residuals-1.png) 
@@ -502,37 +572,39 @@ grid.arrange(stres_a, stres_c, stres_i, stres_t, ncol=2)
 #### RESIDUALS & LEVERAGE
 
 ```r
-summary(lm_sep)
+summary(lm_sep1)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = agscores ~ lowincome + credit + regtech + associated, 
-##     data = df_aei_scores)
+## lm(formula = agscores ~ lowincome + credit + regtech + associated + 
+##     famlab + offfarminc, data = df_aei_scores)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -27.5673  -6.7611   0.6236   7.0751  27.9267 
+## -27.5854  -6.8843   0.2962   6.2988  25.3625 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  2.07657    3.54527   0.586   0.5586    
-## lowincome    0.17184    0.07416   2.317   0.0213 *  
-## credit       0.41591    0.04744   8.767   <2e-16 ***
-## regtech      0.06734    0.05270   1.278   0.2024    
-## associated   0.03921    0.04273   0.918   0.3597    
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) -20.80806    6.25657  -3.326 0.001006 ** 
+## lowincome     0.11793    0.07288   1.618 0.106832    
+## credit        0.47731    0.04890   9.761  < 2e-16 ***
+## regtech       0.10743    0.05214   2.061 0.040316 *  
+## associated    0.04789    0.04148   1.155 0.249317    
+## famlab        0.21090    0.05582   3.778 0.000195 ***
+## offfarminc    0.17075    0.06183   2.762 0.006154 ** 
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 10.01 on 268 degrees of freedom
-## Multiple R-squared:  0.4627,	Adjusted R-squared:  0.4546 
-## F-statistic: 57.69 on 4 and 268 DF,  p-value: < 2.2e-16
+## Residual standard error: 9.698 on 266 degrees of freedom
+## Multiple R-squared:  0.4995,	Adjusted R-squared:  0.4882 
+## F-statistic: 44.24 on 6 and 266 DF,  p-value: < 2.2e-16
 ```
 
 ```r
 opar <- par(mfrow = c(2,2), oma = c(0, 0, 1.1, 0)) # not quite sure what this does but got it from ats.ucla website shown below 
-plot(lm_sep, las = 1) # highlights the observations that may be problematic 
+plot(lm_sep1, las = 1) # highlights the observations that may be problematic 
 ```
 
 ![](Scale_Creation___Regression_04.06.16_files/figure-html/diagnostics on full-1.png) 
@@ -559,8 +631,8 @@ df_aei_scores[c(10,29,58,105,273), 1:2]
 ###Cook's D and Studentized residuals
 
 ```r
-cd <- cooks.distance(lm_sep) # run cook's D looking for leverage and residual
-sres <- rstandard(lm_sep) #  calculate standardized residuals
+cd <- cooks.distance(lm_sep1) # run cook's D looking for leverage and residual
+sres <- rstandard(lm_sep1) #  calculate standardized residuals
 df_diag_sep <- cbind(df_aei_scores, cd, sres) # add cooks D and student residuals to the dataframe
 
 #COOK'S D
@@ -579,38 +651,42 @@ big_residuals <- df_diag_sep[1:10,] # this shows the largest residuals
 knitr::kable(cooks_d[,c(1, 2, 17)]) 
 ```
 
-          code  municipality                  cd
+          code  municipality            agscores
 ----  --------  --------------------  ----------
-29     4202131  Bela Vista do Toldo    0.0231351
-58     4204178  Cerro Negro            0.0311484
-105    4207403  Imbuia                 0.0387800
-120    4208500  Ituporanga             0.0236372
-138    4209854  Lindoia do Sul         0.0182927
-145    4210308  Major Vieira           0.0254087
-151    4210803  Meleiro                0.0162622
-160    4211405  Nova Erechim           0.0218706
-173    4212205  Papanduva              0.0204775
-246    4217956  Tigrinhos              0.0221299
-248    4218103  Timbe do Sul           0.0151389
-258    4218806  Turvo                  0.0203975
-273    4219853  Zortea                 0.0284132
+1      4200051  Abdon Batista          24.740000
+10     4200754  Alto Bela Vista        59.081667
+13     4201000  Anita Garibaldi        10.148333
+29     4202131  Bela Vista do Toldo     5.931667
+58     4204178  Cerro Negro            17.623333
+65     4204459  Coronel Martins        52.071667
+105    4207403  Imbuia                  7.611667
+120    4208500  Ituporanga             14.578333
+145    4210308  Major Vieira           11.631667
+151    4210803  Meleiro                11.600000
+155    4211058  Monte Carlo            20.343333
+160    4211405  Nova Erechim           54.328333
+196    4214300  Rancho Queimado        25.176667
+217    4215695  Santiago do Sul        23.490000
+246    4217956  Tigrinhos              54.358333
+258    4218806  Turvo                  10.795000
+273    4219853  Zortea                 33.248333
 
 ```r
 knitr::kable(big_residuals[,c(1, 2, 19)])
 ```
 
-          code  municipality               rabs
-----  --------  --------------------  ---------
-10     4200754  Alto Bela Vista        2.800655
-105    4207403  Imbuia                 2.787769
-29     4202131  Bela Vista do Toldo    2.702221
-246    4217956  Tigrinhos              2.263490
-258    4218806  Turvo                  2.203054
-77     4205191  Ermo                   2.192999
-21     4201604  Arroio Trinta          2.149234
-190    4213807  Praia Grande           2.108258
-145    4210308  Major Vieira           2.078959
-116    4208005  Ita                    2.064629
+          code  municipality                sres
+----  --------  --------------------  ----------
+29     4202131  Bela Vista do Toldo    -2.879439
+105    4207403  Imbuia                 -2.715039
+10     4200754  Alto Bela Vista         2.636085
+246    4217956  Tigrinhos               2.410621
+273    4219853  Zortea                  2.400642
+151    4210803  Meleiro                -2.251569
+1      4200051  Abdon Batista          -2.215533
+13     4201000  Anita Garibaldi        -2.186427
+145    4210308  Major Vieira           -2.144646
+221    4215901  Sao Bonifacio           2.127901
 
 ####LIST OF PROBLEM CASES 
 Municipalities that showed up on more than 1 of the above tables or from the earlier plots 
@@ -649,7 +725,7 @@ str(rerun_df_aei_scores)
 ```
 
 ```
-## 'data.frame':	264 obs. of  16 variables:
+## 'data.frame':	264 obs. of  17 variables:
 ##  $ code        : int  4200051 4200101 4200200 4200309 4200408 4200507 4200556 4200606 4200705 4200804 ...
 ##  $ municipality: Factor w/ 264 levels "Abdon Batista",..: 1 2 3 4 5 6 7 8 9 10 ...
 ##  $ orgcomp     : num  7.26 5.45 3.74 3.96 25.59 ...
@@ -665,6 +741,7 @@ str(rerun_df_aei_scores)
 ##  $ regtech     : num  9.62 17.2 22.26 46.74 21.34 ...
 ##  $ credit      : num  60.9 34 30.6 40.1 47.8 ...
 ##  $ offfarminc  : num  56.5 12.7 26 15.1 23.6 ...
+##  $ nochem      : num  21.1 25.3 17.3 10.2 49.6 ...
 ##  $ agscores    : num  24.7 26.8 40.2 23 35.5 ...
 ```
 
@@ -1011,9 +1088,9 @@ plot(lm_straw_rr)
 TESTING REGRESSION TABLES
 
 ```r
-stargazer(lm_sep, lm_2by2_1, lm_2by2_2, type = "text", title="Linear Model - FULL ", digits=1, out="Regression_Tables_Using_Score_04.07.16.txt")
+stargazer(lm_sep1, lm_sep2, lm_2by2_1, lm_2by2_2, type = "text", title="Linear Model - FULL ", digits=1, out="Regression_Tables_Using_Score_04.07.16.txt")
 
-stargazer(lm_covercrop, lm_croprot, lm_manure, lm_straw, lm_diverse, lm_apm, type = "text", title="Linear Model - FULL ", digits=1, out="Regression_Tables_Individ_Indep_04.07.16.txt")
+stargazer(lm_covercrop, lm_croprot, lm_manure, lm_straw, lm_diverse, lm_apm, lm_nochem, type = "text", title="Linear Model - FULL ", digits=1, out="Regression_Tables_Individ_Indep_04.07.16.txt")
 
 stargazer(lm_sep_rr, lm_2by2_1_rr, lm_2by2_2_rr, type = "text", title="Linear Model - FULL ", digits=1, out="Regression_Tables_Using_Score_RR_04.07.16.txt")
 

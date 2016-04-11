@@ -24,11 +24,13 @@ suppressPackageStartupMessages(library(devtools)) # for PCA analysis as well, I 
 suppressPackageStartupMessages(library(psych)) # needed for chronbach's alpha
 suppressPackageStartupMessages(library(stats)) 
 suppressPackageStartupMessages(library(stargazer)) 
+
+
 ```
 
 #### DATA SET UP  - This should be in every file that I am working on)
 ```{r load data set}
-rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_02.22.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
+rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_04.10.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
 # note that this dataset was updated in a feb 22 version to only have variables that I will be working with 
 ```
 
@@ -84,6 +86,7 @@ str(agscores)
 # bind the scores onto the original dataframe but store as a new dataframe
 df_aei_scores <- cbind(df_aei, agscores) 
 df_aei_scores
+write.csv(df_aei_scores, file = "df_aei_scores.csv")
 ```
 
 ###PART 3: INITIAL REGRESSIONS
@@ -91,11 +94,17 @@ df_aei_scores
 #### REGRESSIONS - without any leverage/outliers removed 
 
 Regression with all independent variables 
-```{r regression with each separate1}
+```{r regression with all independent}
 
-lm_sep <- lm(agscores ~ lowincome + credit + regtech + associated, df_aei_scores)
-summary(lm_sep)
+lm_sep1 <- lm(agscores ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei_scores)
+summary(lm_sep1)
 ```
+
+```{r regression with some independent}
+lm_sep2 <- lm(agscores ~ lowincome + credit + regtech + associated, df_aei_scores)
+summary(lm_sep2)
+```
+
 
 ```{r regression 2x21}
 lm_2by2_1 <- lm(agscores ~ lowincome + credit, df_aei_scores)
@@ -107,52 +116,88 @@ summary(lm_2by2_2)
 
 ANOVA 
 ```{r}
-anova(lm_sep)
+anova(lm_sep1)
 ```
 
 PLOT REGRESSION
 ```{r}
-plot(lm_sep)
+plot(lm_sep1)
 ```
 
 #### REGRESSIONS WITH INDIVIDUAL DEPENDENT VARIABLES
 ```{r}
 #COVER CROP 
-lm_covercrop <- lm(covercrop ~ lowincome + credit + regtech + associated, df_aei)
+lm_covercrop <- lm(covercrop ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei)
 summary(lm_covercrop)
-plot(lm_covercrop)
+#plot(lm_covercrop)
 
 #CROP ROTATION 
-lm_croprot <- lm(croprot ~ lowincome + credit + regtech + associated, df_aei)
+lm_croprot <- lm(croprot ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei)
 summary(lm_croprot)
-plot(lm_croprot)
+#plot(lm_croprot)
 
 #MANURE
-lm_manure <- lm(manure ~ lowincome + credit + regtech + associated, df_aei)
+lm_manure <- lm(manure ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei)
 summary(lm_manure)
-plot(lm_manure)
+#plot(lm_manure)
 
 #APM
-lm_apm <- lm(apm ~ lowincome + credit + regtech + associated, df_aei)
+lm_apm <- lm(apm ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei)
 summary(lm_apm)
-plot(lm_apm)
+#plot(lm_apm)
 
 #DIVERSE
-lm_diverse <- lm(diverse ~ lowincome + credit + regtech + associated, df_aei)
+lm_diverse <- lm(diverse ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei)
 summary(lm_diverse)
-plot(lm_diverse)
+#plot(lm_diverse)
 
 #STRAW
-lm_straw <- lm(straw ~ lowincome + credit + regtech + associated, df_aei)
+lm_straw <- lm(straw ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei)
 summary(lm_straw)
-plot(lm_straw)
+#plot(lm_straw)
+
+#NOCHEM
+lm_nochem <- lm(nochem ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei)
+summary(lm_nochem)
+#plot(lm_nochem)
 ```
+
+####INDIVIDUAL INDEPENDENT VARIABLES ON AG SCORES
+```{r testing some regression plots on scores}
+pl_cred <- ggplot(df_aei_scores, aes(x=agscores, y = credit)) +
+  geom_point() +
+  geom_smooth(method=lm)
+
+pl_assoc <- ggplot(df_aei_scores, aes(x=agscores, y = associated)) +
+  geom_point() +
+  geom_smooth(method=lm)
+
+pl_regtech <- ggplot(df_aei_scores, aes(x=agscores, y = regtech)) +
+  geom_point() +
+  geom_smooth(method=lm)
+
+pl_lowincome <- ggplot(df_aei_scores, aes(x=agscores, y = lowincome)) +
+  geom_point() +
+  geom_smooth(method=lm)
+
+pl_offfarm <- ggplot(df_aei_scores, aes(x=agscores, y = offfarminc)) +
+  geom_point() +
+  geom_smooth(method=lm)
+
+pl_famlab <- ggplot(df_aei_scores, aes(x=agscores, y = famlab)) +
+  geom_point() +
+  geom_smooth(method=lm)
+
+grid.arrange(pl_cred, pl_assoc, pl_regtech, pl_offfarm, pl_lowincome, pl_famlab, ncol=3)
+
+```
+
 ### PART 4: REGRESSION CHECKS 
 ***
 
 ####RESIDUALS
 ```{r residuals}
- st_res <- rstandard(lm_sep) #pulls out the standard residuals from the regression
+ st_res <- rstandard(lm_sep1) #pulls out the standard residuals from the regression
 
 #Residuals for all independent variables 
 stres_a <- ggplot(df_aei_scores, aes(associated, st_res)) +
@@ -171,15 +216,23 @@ stres_t <- ggplot(df_aei_scores, aes(regtech, st_res)) +
   geom_point() +
   stat_smooth()
 
-grid.arrange(stres_a, stres_c, stres_i, stres_t, ncol=2)
+stres_fl <- ggplot(df_aei_scores, aes(famlab, st_res)) +
+  geom_point() +
+  stat_smooth()
+
+stres_of <- ggplot(df_aei_scores, aes(offfarminc, st_res)) +
+  geom_point() +
+  stat_smooth()
+
+grid.arrange(stres_a, stres_c, stres_i, stres_t, stres_fl, stres_of, ncol=2)
 ```
 
 #### RESIDUALS & LEVERAGE
 ```{r diagnostics on full}
-summary(lm_sep)
+summary(lm_sep1)
 
 opar <- par(mfrow = c(2,2), oma = c(0, 0, 1.1, 0)) # not quite sure what this does but got it from ats.ucla website shown below 
-plot(lm_sep, las = 1) # highlights the observations that may be problematic 
+plot(lm_sep1, las = 1) # highlights the observations that may be problematic 
 
 par(opar)
 ```
@@ -192,8 +245,8 @@ df_aei_scores[c(10,29,58,105,273), 1:2]
 ```
 ###Cook's D and Studentized residuals
 ```{r cooks d}
-cd <- cooks.distance(lm_sep) # run cook's D looking for leverage and residual
-sres <- rstandard(lm_sep) #  calculate standardized residuals
+cd <- cooks.distance(lm_sep1) # run cook's D looking for leverage and residual
+sres <- rstandard(lm_sep1) #  calculate standardized residuals
 df_diag_sep <- cbind(df_aei_scores, cd, sres) # add cooks D and student residuals to the dataframe
 
 #COOK'S D
@@ -218,8 +271,6 @@ Municipalities that showed up on more than 1 of the above tables or from the ear
 ```{r}
 prob_cases <- df_aei_scores[c(10, 21,29,58,77,145,246,258,273), 1:2]
 knitr::kable(prob_cases) # nice table of problem cases 
-
-
 ```
 
 ###PART 5: RESPECIFICATION 
@@ -296,11 +347,13 @@ plot(lm_straw_rr)
 ```
 
 
+
+
 TESTING REGRESSION TABLES
 ```{r, results = "hide"}
-stargazer(lm_sep, lm_2by2_1, lm_2by2_2, type = "text", title="Linear Model - FULL ", digits=1, out="Regression_Tables_Using_Score_04.07.16.txt")
+stargazer(lm_sep1, lm_sep2, lm_2by2_1, lm_2by2_2, type = "text", title="Linear Model - FULL ", digits=1, out="Regression_Tables_Using_Score_04.07.16.txt")
 
-stargazer(lm_covercrop, lm_croprot, lm_manure, lm_straw, lm_diverse, lm_apm, type = "text", title="Linear Model - FULL ", digits=1, out="Regression_Tables_Individ_Indep_04.07.16.txt")
+stargazer(lm_covercrop, lm_croprot, lm_manure, lm_straw, lm_diverse, lm_apm, lm_nochem, type = "text", title="Linear Model - FULL ", digits=1, out="Regression_Tables_Individ_Indep_04.07.16.txt")
 
 stargazer(lm_sep_rr, lm_2by2_1_rr, lm_2by2_2_rr, type = "text", title="Linear Model - FULL ", digits=1, out="Regression_Tables_Using_Score_RR_04.07.16.txt")
 

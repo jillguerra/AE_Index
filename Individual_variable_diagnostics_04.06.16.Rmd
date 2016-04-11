@@ -22,7 +22,7 @@ suppressPackageStartupMessages(library(stats))
 
 #### DATA SET UP  - This should be in every file that I am working on)
 ```{r load data set}
-rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_02.22.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
+rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_04.10.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
 # note that this dataset was updated in a feb 22 version to only have variables that I will be working with 
 ```
 
@@ -74,9 +74,11 @@ f <- ggplot(df_aei, aes(x = diverse)) +
  geom_histogram()
 g <- ggplot(df_aei, aes(x = straw)) +
  geom_histogram()
+h<- ggplot(df_aei, aes(x = nochem)) +
+  geom_histogram()
 
-# p <- ggplot(df_aei, aes(x = famlab)) +
-#  geom_histogram()
+p <- ggplot(df_aei, aes(x = famlab)) +
+  geom_histogram()
 q <- ggplot(df_aei, aes(x = associated)) +
  geom_histogram()
 r <- ggplot(df_aei, aes(x = lowincome)) +
@@ -85,11 +87,11 @@ s <- ggplot(df_aei, aes(x = regtech)) +
  geom_histogram()
 t <- ggplot(df_aei, aes(x = credit)) +
  geom_histogram()
-# u <- ggplot(df_aei, aes(x = offfarminc)) +
-#  geom_histogram()
+u <- ggplot(df_aei, aes(x = offfarminc)) +
+  geom_histogram()
 
 # note that the alphabet is split because I took this from a previous file 
-grid.arrange(a,b,d,e,f,g,q,r,s,t, ncol=3)
+grid.arrange(a,b,d,e,f,g,h,p,q,r,s,t,u, ncol=3)
 
 ```
 
@@ -158,6 +160,11 @@ plot(lm_diverse)
 lm_straw <- lm(straw ~ lowincome + credit + regtech + associated, df_aei)
 summary(lm_straw)
 plot(lm_straw)
+
+# NOCHEM 
+lm_nochem <- lm(nochem ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei)
+summary(lm_nochem)
+plot(lm_nochem)
 ```
 
 Thes correlations point to a moderate-strong relationship between production diversity and credit. So diversification of acitivies requires some access to credit/ 
