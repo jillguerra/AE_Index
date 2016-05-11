@@ -1,0 +1,367 @@
+---
+title: "Scale_Regression_Checks"
+author: "Jill Guerra"
+date: "April 12, 2016"
+output: 
+  html_document:
+    keep_md: true 
+---
+UPDATED: April 12
+
+
+###PART 1: LOAD DATA, CREATE SCALE
+***
+This section loads the packages, imports data and cleans the data of small farms and observations with NA values 
+####PACKAGES
+```{r packages }
+library(ggplot2)
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(gridExtra)) # for grid.arrange 
+suppressPackageStartupMessages(library("moments")) # for skew & kurtosis
+suppressPackageStartupMessages(library(knitr)) # for nice tables 
+suppressPackageStartupMessages(library(ggbiplot)) # for PCA analysis 
+suppressPackageStartupMessages(library(devtools)) # for PCA analysis as well, I believe 
+suppressPackageStartupMessages(library(psych)) # needed for chronbach's alpha
+suppressPackageStartupMessages(library(stats)) 
+suppressPackageStartupMessages(library(stargazer)) 
+
+
+```
+
+#### DATA SET UP  - This should be in every file that I am working on)
+```{r load data set}
+rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_04.12.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
+# note that this dataset was updated in a feb 22 version to only have variables that I will be working with 
+```
+
+```{r drop observations with <50 farms, results = 'hide'}
+
+small <- c("4202453", "4202008", "4208450", "4202057", "4201950", "4206306") # these are the codes for the municipalities that have fewer than 50 farms. Names in Result_tracking Rmd. 
+
+'%!in%' <- function(x,y)!('%in%'(x,y)) # sweet function for negating an %in% function 
+
+# drop the municipalities that are held in the 'small' value. 
+df_aei <- rawdf_aei %>% 
+  filter(code %!in% small) %>% 
+  droplevels()  # need to drop levels or else the new data.frame will continue to store the other factors even though they aren't being used. See Homework 5 from stats class for more about this. 
+
+str(df_aei) # check the factor levels. It should match the #obs shown in the global environment section. If it does not then the droplevels() didn't work. 
+
+```
+
+```{r drop observations with NAs}
+na_obs <- df_aei[rowSums(is.na(df_aei)) > 0,] # pulls out new data.frame with just the NA values
+
+na_obs_names <- na_obs[,1]
+
+df_aei <- df_aei %>% 
+  filter(code %!in% na_obs_names) %>% 
+  droplevels()
+
+nlevels(df_aei$municipality) # should be 273! 
+
+```
+
+###PART 2: SCALE CREATION 
+***
+This section will define the Agscores scale and bind it to the original dataframe, but stored in a new dataframe ('df_aei_score')
+
+####SCALE  
+```{r}
+#columns from current dataset:
+
+# current column numbers for orgcomp (3), manure (4), cover_crop (5), crop_rotation (6), apm(7), production diversity (8) direct_planting(9)
+ae_scale_old <- df_aei[,c(4:9)] # this one looks the best. It excludes organic compost because it as negatively related in the alpha of the scale in which it was included 
+alpha(ae_scale_old)
+# chronbach's is 0.73
+
+ae_scale_chem <- df_aei[,c(4:9,16)]
+alpha(ae_scale_chem) #o.49
+
+# new scae that looks pretty good. ## used. 
+ae_scale <- df_aei[,c(5:9)] 
+alpha(ae_scale) #= 0.74
+
+```
+
+```{r create the index and bind, results='hide'}
+#Creating scores
+ae_score <- ((df_aei$apm +df_aei$crop_rotation + df_aei$direct_planting + df_aei$manure + df_aei$cover_crop + df_aei$production_diversity)/6) # testing one score set 
+
+str(agscores)
+
+# bind the scores onto the original dataframe but store as a new dataframe
+df_aei_score <- cbind(df_aei, ae_score) 
+df_aei_score
+write.csv(df_aei_score, file = "df_aei_score.csv")
+```
+
+###PART 3: INITIAL REGRESSIONS
+***
+#### REGRESSIONS - without any leverage/outliers removed 
+
+Regression with all independent variables 
+```{r regression with all independent}
+
+lm_sep1 <- lm(ae_score ~ low_income + credit_access + extension+ farmers_association + only_family_labour + off_farm_income, df_aei_score)
+summary(lm_sep1)
+```
+
+
+ANOVA 
+```{r}
+anova(lm_sep1)
+```
+
+PLOT REGRESSION
+```{r}
+plot(lm_sep1)
+```
+
+#### REGRESSIONS WITH INDIVIDUAL DEPENDENT VARIABLES
+```{r}
+#COVER CROP 
+lm_cover_crop <- lm(cover_crop ~ low_income + credit_access + extension+ farmers_association + only_family_labour + off_farm_income, df_aei)
+summary(lm_cover_crop)
+
+#CROP ROTATION 
+lm_crop_rotation <- lm(crop_rotation ~ low_income + credit_access + extension+ farmers_association + only_family_labour + off_farm_income, df_aei)
+summary(lm_crop_rotation)
+
+#MANURE
+lm_manure <- lm(manure ~ low_income + credit_access + extension+ farmers_association + only_family_labour + off_farm_income, df_aei)
+summary(lm_manure)
+
+#APM
+lm_apm <- lm(apm ~ low_income + credit_access + extension+ farmers_association + only_family_labour + off_farm_income, df_aei)
+
+#production_diversity
+lm_production_diversity <- lm(production_diversity ~ low_income + credit_access + extension+ farmers_association + only_family_labour + off_farm_income, df_aei)
+summary(lm_production_diversity)
+
+#direct_planting
+lm_direct_planting <- lm(direct_planting ~ low_income + credit_access + extension+ farmers_association + only_family_labour + off_farm_income, df_aei)
+summary(lm_direct_planting)
+
+#no_agrichemicals
+lm_no_agrichemicals <- lm(no_agrichemicals ~ low_income + credit_access + extension+ farmers_association + only_family_labour + off_farm_income, df_aei)
+summary(lm_no_agrichemicals)
+
+```
+
+####INDIVIDUAL INDEPENDENT VARIABLES ON AG SCORES
+```{r testing some regression plots on scores}
+pl_cred <- ggplot(df_aei_score, aes(x=agscores, y = credit_access)) +
+  geom_point() +
+  geom_smooth(method=lm)
+
+pl_assoc <- ggplot(df_aei_score, aes(x=agscores, y = farmers_association)) +
+  geom_point() +
+  geom_smooth(method=lm)
+
+pl_extension<- ggplot(df_aei_score, aes(x=agscores, y = extension)) +
+  geom_point() +
+  geom_smooth(method=lm)
+
+pl_low_income <- ggplot(df_aei_score, aes(x=agscores, y = low_income)) +
+  geom_point() +
+  geom_smooth(method=lm)
+
+pl_offfarm <- ggplot(df_aei_score, aes(x=agscores, y = off_farm_income)) +
+  geom_point() +
+  geom_smooth(method=lm)
+
+pl_only_family_labour <- ggplot(df_aei_score, aes(x=agscores, y = only_family_labour)) +
+  geom_point() +
+  geom_smooth(method=lm)
+
+grid.arrange(pl_cred, pl_assoc, pl_extension, pl_offfarm, pl_low_income, pl_only_family_labour, ncol=3)
+
+```
+
+### PART 4: REGRESSION CHECKS 
+***
+
+####RESIDUALS
+```{r residuals}
+ st_res <- rstandard(lm_sep1) #pulls out the standard residuals from the regression
+
+#Residuals for all independent variables 
+stres_a <- ggplot(df_aei_score, aes(farmers_association, st_res)) +
+  geom_point() +
+  stat_smooth()
+
+stres_c <- ggplot(df_aei_score, aes(credit_access, st_res)) +
+  geom_point() +
+  stat_smooth()
+
+stres_i <- ggplot(df_aei_score, aes(low_income, st_res)) +
+  geom_point() +
+  stat_smooth()
+
+stres_t <- ggplot(df_aei_score, aes(extension, st_res)) +
+  geom_point() +
+  stat_smooth()
+
+stres_fl <- ggplot(df_aei_score, aes(only_family_labour, st_res)) +
+  geom_point() +
+  stat_smooth()
+
+stres_of <- ggplot(df_aei_score, aes(off_farm_income, st_res)) +
+  geom_point() +
+  stat_smooth()
+
+grid.arrange(stres_a, stres_c, stres_i, stres_t, stres_fl, stres_of, ncol=2)
+```
+
+#### RESIDUALS & LEVERAGE
+```{r diagnostics on full}
+summary(lm_sep1)
+
+opar <- par(mfrow = c(2,2), oma = c(0, 0, 1.1, 0)) # not quite sure what this does but got it from ats.ucla website shown below 
+plot(lm_sep1, las = 1) # highlights the observations that may be problematic 
+
+par(opar)
+```
+###LIST OF PROBLEM CASES 
+```{r}
+# Cases identified April 7th with data set excluding small farms and NAs and an ag scale of cover crop, crop rot, apm, manure, direct_planting and production_diversity
+# enter observation numbers and display the 
+df_aei_score[c(10,29,58,105,273), 1:2]
+
+```
+###Cook's D and Studentized residuals
+```{r cooks d}
+cd <- cooks.distance(lm_sep1) # run cook's D looking for leverage and residual
+sres <- rstandard(lm_sep1) #  calculate standardized residuals
+df_diag_sep <- cbind(df_aei_score, cd, sres) # add cooks D and student residuals to the dataframe
+
+#COOK'S D
+cooks_d <- df_diag_sep[cd > 4/(268), ] #pull out on the cook's D's that are beyond the hypothetical cutoff. Degrees of freedom for lm_sep is 268 (from the summary output)
+
+#RESIDUALS
+rabs <- abs(sres) # absolute value of the residuals
+df_diag_sep <- cbind(df_diag_sep, rabs) # bind these residuals with the previous df
+df_diag_sep <- df_diag_sep[order(-rabs), ] # reorder according to absolute value residuals
+big_residuals <- df_diag_sep[1:10,] # this shows the largest residuals 
+```
+
+####RESULTS 
+```{r tables with residuals and cooks D results}
+ 
+knitr::kable(cooks_d[,c(1, 2, 17)]) 
+knitr::kable(big_residuals[,c(1, 2, 19)])
+```
+
+####LIST OF PROBLEM CASES 
+Municipalities that showed up on more than 1 of the above tables or from the earlier plots 
+```{r}
+prob_cases <- df_aei_score[c(10, 21,29,58,77,145,246,258,273), 1:2]
+knitr::kable(prob_cases) # nice table of problem cases 
+```
+
+###PART 5: RESPECIFICATION 
+***
+Rerun the regressions as performed earlier but without the leverage and outliers. Remember that the ag scores are already defined from earlier, so do not need to add again. 
+
+####REMOVE PROBLEM CASES
+```{r}
+prob_cases_codes <- prob_cases[,1] # pull out just the code names of the cases identified in the previous chunk 
+
+rerun_df_aei_scores <- df_aei_scores %>% 
+  filter(code %!in% prob_cases_codes) %>% # remove all cases identified in previous chunk
+  droplevels() # drop factor levels 
+
+str(rerun_df_aei_scores)
+```
+
+#####REGRESSION
+```{r regression with each separate}
+lm_sep_rr <- lm(ae_score ~ low_income + credit_access + extension + farmers_association + only_family_labour + off_farm_income, rerun_df_aei_scores)
+summary(lm_sep_rr)
+```
+
+PLOT REGRESSION
+```{r}
+plot(lm_sep_rr)
+```
+
+#### REGRESSIONS WITH INDIVIDUAL DEPENDENT VARIABLES
+```{r}
+#COVER CROP 
+lm_cover_crop_rr <- lm(cover_crop ~ low_income + credit_access + extension+ farmers_association + only_family_labour + off_farm_income, rerun_df_aei_scores)
+summary(lm_cover_crop_rr)
+
+#CROP ROTATION 
+lm_crop_rotation_rr <- lm(crop_rotation ~ low_income + credit_access + extension+ farmers_association + only_family_labour + off_farm_income, rerun_df_aei_scores)
+summary(lm_crop_rotation_rr)
+
+#MANURE
+lm_manure_rr <- lm(manure ~ low_income + credit_access + extension+ farmers_association + only_family_labour + off_farm_income, rerun_df_aei_scores)
+summary(lm_manure_rr)
+
+#APM
+lm_apm_rr <- lm(apm ~ low_income + credit_access + extension+ farmers_association + only_family_labour + off_farm_income, rerun_df_aei_scores)
+summary(lm_apm_rr)
+
+#production_diversity
+lm_production_diversity_rr <- lm(production_diversity ~ low_income + credit_access + extension + farmers_association + only_family_labour + off_farm_income, rerun_df_aei_scores)
+
+#direct_planting
+lm_direct_planting_rr <- lm(direct_planting ~ low_income + credit_access + extension+ farmers_association + only_family_labour + off_farm_income, rerun_df_aei_scores)
+
+#no-chem
+lm_no_agrichemicals_rr <- lm(no_agrichemicals ~ low_income + credit_access + extension+ farmers_association + only_family_labour + off_farm_income, rerun_df_aei_scores)
+summary(lm_no_agrichemicals)
+
+```
+
+
+
+
+TESTING REGRESSION TABLES
+```{r, results = "hide"}
+
+#Aggregated only 
+stargazer(lm_sep1, type = "text", title="Aggregated Practices Model", digits=1,dep.var.labels=c("Aggregated Score"), covariate.labels = c("Low income", "Credit access", "Extension",  "Farmers' association", "Only family labour", "Off farm income"),  out="Aggregate_reg_table_05.11.16.txt")
+
+#Disaggregated only 
+stargazer(lm_cover_crop, lm_crop_rotation, lm_direct_planting, lm_production_diversity, lm_apm, lm_no_agrichemicals, type = "text", title="Disaggregated Practices Model", digits=1, dep.var.labels=c("Cover crop", "Crop rotation", "Direct planting", "Production diversity", "APM", "No agrichemicals"), covariate.labels = c("Low income", "Credit access", "Extension",  "Farmers' association", "Only family labour", "Off farm income"), out ="Disaggregate_reg_table_05.11.16.txt")
+
+# NOTE: STEPWISE IS IN OTHER FILE 
+
+# Descriptive statistics 
+df_aei_score_dep <- df_aei_score[,c(5:9,16:17)]
+stargazer(df_aei_score_dep, type = "text", column.labels =c("Cover crop", "Crop rotation", "Direct planting", "Production diversity", "APM", "No agrichemicals", "Aggregated score"), out ="Descriptive_dep_05.10.16.txt")
+
+df_aei_score_indep <- df_aei_score[,c(10:15)]
+stargazer(df_aei_score_indep, type = "text", out ="Descriptive_indep_05.10.16.txt")
+
+
+####OLD 
+
+# stargazer(lm_cover_crop, lm_crop_rotation, lm_direct_planting, lm_production_diversity, lm_apm, lm_no_agrichemicals, type = "text", title="Linear Model - FULL ", digits=1, out="Regression_Tables_Individ_Indep_04.26.16.txt")
+
+# # Table with all the individual and the aggregate score 
+# stargazer(lm_cover_crop, lm_crop_rotation, lm_direct_planting, lm_production_diversity, lm_apm, lm_no_agrichemicals, lm_sep1, type = "text", title="Disaggregated & Aggregated Models ", digits=1, dep.var.labels=c("Cover crop", "Crop rotation", "Direct planting", "Production diversity", "APM", "No agrichemicals", "Aggregated score"), covariate.labels = c("Low income", "Credit access", "Extension",  "Farmers' association", "Only family labour", "Off farm income"), out ="Regression_Tables_DandA_05.10.16.txt")
+
+##ReRUN tests : Note that there are no substantial differences so it doesn't matter. 
+# stargazer(lm_sep_rr, lm_sep1, type = "text", title="Linear Model - FULL ", digits=1, out="Rerun_vs_Original_04.26.16.txt")
+# 
+# stargazer(lm_cover_crop_rr, lm_crop_rotation_rr, lm_direct_planting_rr, lm_production_diversity_rr, lm_apm_rr, lm_no_agrichemicals_rr, type = "text", title="Linear Model - FULL ", digits=1, out="Rerun_vs_Original_Individ_Indep_04.26.16.txt")
+```
+
+
+```{r}
+cor(df_aei$direct_planting, df_aei$no_agrichemicals)
+
+```
+
+Similar results as before: credit_access still the biggest predictor. 
+
+MAPS! 
+link to blog using brazilian municipalities shapefile 
+https://dioferrari.wordpress.com/2014/11/27/plotting-maps-using-r-example-with-brazilian-municipal-level-data/
+
+
+

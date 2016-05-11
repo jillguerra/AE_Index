@@ -2,7 +2,9 @@
 title: "Variable_diagnostics_04.06.16"
 author: "Jill Guerra"
 date: "April 6, 2016"
-output: html_document
+output: 
+  html_document:
+    keep_md: true
 ---
 This should be used to look at the histograms, spread, variability etc of individual variables 
 ####PART 1: LOAD
@@ -17,7 +19,10 @@ suppressPackageStartupMessages(library(knitr)) # for nice tables
 suppressPackageStartupMessages(library(ggbiplot)) # for PCA analysis 
 suppressPackageStartupMessages(library(devtools)) # for PCA analysis as well, I believe 
 suppressPackageStartupMessages(library(psych)) # needed for chronbach's alpha
-suppressPackageStartupMessages(library(stats)) 
+suppressPackageStartupMessages(library(stats))
+library(broom)
+library(reshape2)
+
 ```
 
 #### DATA SET UP  - This should be in every file that I am working on)
@@ -127,6 +132,40 @@ cor(df_aei$diverse, df_aei$lowincome) # 0.52
 cor(df_aei$regtech, df_aei$credit) # = 0.39
 cor(df_aei$regtech, df_aei$associated) # = 0.32
 cor(df_aei$credit, df_aei$associated) # = 0.67
+cor(df_aei$straw, df_aei$manure) # = 0.23
+cor(df_aei$straw, df_aei$covercrop) # = 0.10
+cor(df_aei$manure, df_aei$manure)
+cor(df_aei$covercrop, df_aei$croprot)
+cor()
+
+
+```
+
+#### Important Bivariate correlations 
+```{r}
+#CRED VS ASSOCIATED graph 
+coef(lm(associated ~ credit, data = df_aei))
+cred_assoc <- ggplot(df_aei, aes(x=credit, y =associated)) + 
+  expand_limits(y=c(0,100)) +
+  expand_limits(x=c(0,100)) +
+  geom_point() + 
+  geom_abline(intercept = 28.7, slope = 0.68) 
+cred_assoc
+
+ggsave("cred_vs_assoc.png", cred_assoc , scale = 1, height = 3, width = 4)
+
+#REGRESSIONS AND COEFFICIENTS
+cred_coef <- coef(lm(nochem ~ credit, df_aei))
+assoc_coef  <- coef(lm(nochem ~ associated, df_aei))
+famlab_coef  <- coef(lm(nochem ~ famlab, df_aei))
+offfarminc_coef  <- coef(lm(nochem ~ offfarminc, df_aei))
+lowinc_coef  <- coef(lm(nochem ~ lowincome, df_aei))
+regtech_coef  <- coef(lm(nochem ~ regtech, df_aei))
+
+all_coefs <- data.frame(cred_coef, assoc_coef, famlab_coef, offfarminc_coef, lowinc_coef, regtech_coef)
+
+melt(all_coefs)
+
 ```
 
 #### REGRESSIONS WITH INDIVIDUAL DEPENDENT VARIABLES
@@ -165,6 +204,15 @@ plot(lm_straw)
 lm_nochem <- lm(nochem ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei)
 summary(lm_nochem)
 plot(lm_nochem)
+
 ```
 
-Thes correlations point to a moderate-strong relationship between production diversity and credit. So diversification of acitivies requires some access to credit/ 
+Thes correlations point to a moderate-strong relationship between production diversity and credit. So diversification of acitivies requires some access to credit 
+
+```{r testing some regression line graphs}
+
+plot(df_aei$direct_planting, df_aei$no_agrichemicals)
+abline(lm(df_aei$diverse~df_aei$credit))
+
+```
+

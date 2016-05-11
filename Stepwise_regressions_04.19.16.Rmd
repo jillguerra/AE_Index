@@ -1,0 +1,130 @@
+---
+title: "Stepwise"
+author: "Jill Guerra"
+date: "April 19, 2016"
+output: 
+  html_document:
+    keep_md: true
+---
+###PART 1: LOAD DATA, CREATE SCALE
+***
+This section loads the packages, imports data and cleans the data of small farms and observations with NA values 
+####PACKAGES
+```{r packages }
+library(ggplot2)
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(gridExtra)) # for grid.arrange 
+suppressPackageStartupMessages(library("moments")) # for skew & kurtosis
+suppressPackageStartupMessages(library(knitr)) # for nice tables 
+suppressPackageStartupMessages(library(ggbiplot)) # for PCA analysis 
+suppressPackageStartupMessages(library(devtools)) # for PCA analysis as well, I believe 
+suppressPackageStartupMessages(library(psych)) # needed for chronbach's alpha
+suppressPackageStartupMessages(library(stats)) 
+suppressPackageStartupMessages(library(stargazer)) 
+```
+
+#### DATA SET UP  - This should be in every file that I am working on)
+```{r load data set}
+rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_04.12.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
+# note that this dataset was updated in a feb 22 version to only have variables that I will be working with 
+```
+
+```{r drop observations with <50 farms, results = 'hide'}
+
+small <- c("4202453", "4202008", "4208450", "4202057", "4201950", "4206306") # these are the codes for the municipalities that have fewer than 50 farms. Names in Result_tracking Rmd. 
+
+'%!in%' <- function(x,y)!('%in%'(x,y)) # sweet function for negating an %in% function 
+
+# drop the municipalities that are held in the 'small' value. 
+df_aei <- rawdf_aei %>% 
+  filter(code %!in% small) %>% 
+  droplevels()  # need to drop levels or else the new data.frame will continue to store the other factors even though they aren't being used. See Homework 5 from stats class for more about this. 
+
+str(df_aei) # check the factor levels. It should match the #obs shown in the global environment section. If it does not then the droplevels() didn't work. 
+
+```
+
+```{r drop observations with NAs}
+na_obs <- df_aei[rowSums(is.na(df_aei)) > 0,] # pulls out new data.frame with just the NA values
+
+na_obs_names <- na_obs[,1]
+
+df_aei <- df_aei %>% 
+  filter(code %!in% na_obs_names) %>% 
+  droplevels()
+
+nlevels(df_aei$municipality) # should be 273! 
+
+```
+
+###PART 2: SCALE CREATION 
+***
+This section will define the Agscores scale and bind it to the original dataframe, but stored in a new dataframe ('df_aei_score')
+
+####SCALE  
+```{r}
+#columns from current dataset:
+
+# current column numbers for orgcomp (3), manure (4), cover_crop (5), crop_rotationation (6), apm(7), production diversity (8) direct_planting(9)
+ae_scale_old <- df_aei[,c(4:9)] # this one looks the best. It excludes organic compost because it as negatively related in the alpha of the scale in which it was included 
+alpha(ae_scale_old)
+# chronbach's is 0.73
+
+# new scae that looks pretty good. 
+ae_scale <- df_aei[,c(5:9)] 
+alpha(ae_scale) #= 0.74
+
+cor(df_aei$direct_planting, df_aei$credit_access)
+
+```
+
+```{r create the index and bind, results='hide'}
+#Creating scores
+agscores <- ((df_aei$apm +df_aei$crop_rotation + df_aei$direct_planting + df_aei$manure + df_aei$cover_crop + df_aei$production_diversity)/6) # testing one score set 
+
+str(agscores)
+
+# bind the scores onto the original dataframe but store as a new dataframe
+df_aei_scores <- cbind(df_aei, agscores) 
+df_aei_scores
+write.csv(df_aei_scores, file = "df_aei_scores.csv")
+```
+
+###STEPWISE BASED ON INITIAL RESULTS 
+```{r stepwise results }
+lm_res_1 <- lm(agscores ~ credit_access, df_aei_scores)
+lm_res_2 <- lm(agscores ~ credit_access + only_family_labour, df_aei_scores)
+lm_res_3 <- lm(agscores ~ credit_access + only_family_labour + off_farm_income, df_aei_scores)
+lm_res_4 <- lm(agscores ~ credit_access + only_family_labour + off_farm_income + extension, df_aei_scores)
+lm_res_5 <- lm(agscores ~ credit_access + only_family_labour + off_farm_income + extension + low_income, df_aei_scores)
+lm_res_6 <- lm(agscores ~ credit_access + only_family_labour + off_farm_income + extension + low_income + farmers_association, df_aei_scores)
+
+stargazer(lm_res_1, lm_res_2, lm_res_3, lm_res_4,lm_res_5,lm_res_6, type = "text", title="Linear Model - FULL ", digits=1, out="Stepwise_results_04.19.16.txt")
+
+```
+
+###STEPWISE BASED ON LITERATURE
+```{r stepwise results }
+lm_lit_1 <- lm(agscores ~ extension, df_aei_scores)
+lm_lit_2 <- lm(agscores ~ extension + farmers_association, df_aei_scores)
+lm_lit_3 <- lm(agscores ~ extension + farmers_association + credit_access, df_aei_scores)
+lm_lit_4 <- lm(agscores ~ extension + farmers_association + credit_access + only_family_labour, df_aei_scores)
+lm_lit_5 <- lm(agscores ~ extension + farmers_association + credit_access + only_family_labour + off_farm_income, df_aei_scores)
+lm_lit_6 <- lm(agscores ~ extension + farmers_association + credit_access + only_family_labour + off_farm_income +  low_income, df_aei_scores)
+
+stargazer(lm_lit_1, lm_lit_2, lm_lit_3, lm_lit_4,lm_lit_5,lm_lit_6, type = "text", title="Linear Model - FULL ", digits=1, out="Stepwise_literature_04.19.16.txt")
+
+```
+
+```{r Stepwise based on results }
+lm_res2_1 <- lm(agscores ~ credit_access, df_aei_scores)
+lm_res2_2 <- lm(agscores ~ credit_access + low_income, df_aei_scores)
+lm_res2_3 <- lm(agscores ~ credit_access + low_income + only_family_labour, df_aei_scores)
+lm_res2_4 <- lm(agscores ~ credit_access + low_income + only_family_labour + off_farm_income + extension, df_aei_scores)
+lm_res2_5 <- lm(agscores ~ credit_access + low_income + only_family_labour + off_farm_income + extension, df_aei_scores)
+lm_res2_6 <- lm(agscores ~ credit_access + low_income + only_family_labour + off_farm_income + extension + low_income + farmers_association, df_aei_scores)
+
+stargazer(lm_res2_1, lm_res2_2, lm_res2_3, lm_res2_4,lm_res2_5,lm_res2_6, type = "text", title="Stepwise Regression", digits=1, dep.var.labels=c("Aggregate score", "Aggregate score", "Aggregate score", "Aggregate score", "Aggregate score", "Aggregate score"), covariate.labels = c("Low income", "Credit access", "Extension",  "Farmers' association", "Only family labour", "Off farm income"), out="Stepwise_results_05.10.16.txt")
+
+```
+

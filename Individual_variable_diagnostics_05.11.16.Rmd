@@ -1,0 +1,337 @@
+---
+title: "Variable_diagnostics_04.06.16"
+author: "Jill Guerra"
+date: "April 6, 2016"
+output: 
+  html_document:
+    keep_md: true
+---
+This should be used to look at the histograms, spread, variability etc of individual variables 
+####PART 1: LOAD
+***
+####PACKAGES
+```{r packages }
+library(ggplot2)
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(gridExtra)) # for grid.arrange 
+suppressPackageStartupMessages(library("moments")) # for skew & kurtosis
+suppressPackageStartupMessages(library(knitr)) # for nice tables 
+suppressPackageStartupMessages(library(ggbiplot)) # for PCA analysis 
+suppressPackageStartupMessages(library(devtools)) # for PCA analysis as well, I believe 
+suppressPackageStartupMessages(library(psych)) # needed for chronbach's alpha
+suppressPackageStartupMessages(library(stats))
+library(wesanderson) # form here https://github.com/karthik/wesanderson
+library(broom)
+library(reshape2)
+
+```
+
+#### DATA SET UP  - This should be in every file that I am working on)
+```{r load data set}
+rawdf_aei<- read.csv("~/AEI_Index/Census_data_formatted_for_R_04.12.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
+# note that this dataset was updated in a feb 22 version to only have variables that I will be working with 
+```
+
+```{r drop observations with <50 farms, results = 'hide'}
+
+small <- c("4202453", "4202008", "4208450", "4202057", "4201950", "4206306") # these are the codes for the municipalities that have fewer than 50 farms. Names in Result_tracking Rmd. 
+
+'%!in%' <- function(x,y)!('%in%'(x,y)) # sweet function for negating an %in% function 
+
+# drop the municipalities that are held in the 'small' value. 
+df_aei <- rawdf_aei %>% 
+  filter(code %!in% small) %>% 
+  droplevels()  # need to drop levels or else the new data.frame will continue to store the other factors even though they aren't being used. See Homework 5 from stats class for more about this. 
+
+str(df_aei) # check the factor levels. It should match the #obs shown in the global environment section. If it does not then the droplevels() didn't work. 
+
+```
+
+```{r drop observations with NAs}
+na_obs <- df_aei[rowSums(is.na(df_aei)) > 0,] # pulls out new data.frame with just the NA values
+
+na_obs_names <- na_obs[,1]
+na_obs_names
+
+df_aei <- df_aei %>% 
+  filter(code %!in% na_obs_names) %>% 
+  droplevels()
+
+nlevels(df_aei$municipality) # should be 273! 
+
+```
+
+###PART 2: GRAPHS FOR THE PAPER 
+
+#### CREDIT VS ASSOCIATED 
+```{r}
+#CRED VS ASSOCIATED graph 
+coef(lm(associated ~ credit, data = df_aei))
+cred_assoc <- ggplot(df_aei, aes(x=credit, y =associated)) + 
+  expand_limits(y=c(0,100)) +
+  expand_limits(x=c(0,100)) +
+  geom_point() + 
+  geom_abline(intercept = 28.7, slope = 0.68) 
+cred_assoc
+
+ggsave("cred_vs_assoc.png", cred_assoc , scale = 1.8, height = 3, width = 4)
+```
+
+##### SHOWING DIFFERENT TRAJECTORY OF NO CHEM AND OTHER AE PRACTICES
+```{r}
+#REGRESSIONS AND COEFFICIENTS
+a <- coef(lm(credit_access ~ cover_crop, df_aei))
+b <- coef(lm(credit_access ~ crop_rotation, df_aei))
+c <- coef(lm(credit_access ~ apm, df_aei))
+d <- coef(lm(credit_access ~ production_diversity, df_aei))
+e <- coef(lm(credit_access ~ direct_planting, df_aei))
+f <- coef(lm(credit_access ~ no_agrichemicals, df_aei))
+
+cred_coefs <- data.frame(a,b,c,d,e,f)
+
+# create a data.frame to use in the next plot. 
+cred_coefs <- t(cred_coefs) # transpose 
+cred_coefs <- data.frame(cred_coefs) # take it back into a dataframe
+colnames(cred_coefs) <- c("intercept", "slope") # change column names
+cred_coefs["Variable"] <- c("Cover crop", "Crop rotation", "APM", "Production diversity", "Direct planting", "No agrichemicals")
+
+#plot the lines 
+cred_plot <- ggplot(df_aei, aes(x=cover_crop, y=credit_access)) + 
+  geom_point(alpha = 0.001) +
+  geom_abline(aes(intercept=intercept, slope=slope, color=Variable), data=cred_coefs) +  
+  xlim(0,100) +
+  ylab("Credit access (%)") + 
+  xlab("Practice (%)") +
+  labs(colour = "Regression line")  # change legend title
+cred_plot
+ggsave("cred_and_disaggregated.png", cred_plot , scale = 1.8, height = 3, width = 4)
+```
+
+```{r}
+#REGRESSIONS AND COEFFICIENTS
+g <- coef(lm(extension ~ cover_crop, df_aei))
+h <- coef(lm(extension ~ crop_rotation, df_aei))
+i <- coef(lm(extension ~ apm, df_aei))
+j <- coef(lm(extension ~ production_diversity, df_aei))
+k <- coef(lm(extension ~ direct_planting, df_aei))
+l <- coef(lm(extension ~ no_agrichemicals, df_aei))
+
+ext_coefs <- data.frame(g,h,i,j,k,l)
+
+# create a data.frame to use in the next plot. 
+ext_coefs <- t(ext_coefs) # transpose 
+ext_coefs <- data.frame(ext_coefs) # take it back into a dataframe
+colnames(ext_coefs) <- c("intercept", "slope") # change column names
+ext_coefs["Variable"] <- c("Cover crop", "Crop rotation", "APM", "Production diversity", "Direct planting", "No agrichemicals")
+
+#plot the lines 
+ext_plot <- ggplot(df_aei, aes(x=cover_crop, y=extension)) + 
+  geom_point(alpha = 0.001) +
+  geom_abline(aes(intercept=intercept, slope=slope, color=Variable), ext_coefs) +  
+  xlim(0,100) +
+  ylab("Regular extension access (%)") + 
+  xlab("Practice%") +
+  labs(colour = "Regression line")  # change legend title
+ext_plot
+ggsave("ext_and_disaggregated.png", ext_plot , scale = 1.8, height = 3, width = 4)
+```
+
+REMEMBER: keep the scale, height and width of graphs consistent across different ones for thesis. 
+
+
+
+####ALL INDEPENDENT AND NO CHEM 
+```{r}
+#REGRESSIONS AND COEFFICIENTS
+cred_coef <- coef(lm(no_agrichemicals ~ credit_access, df_aei))
+assoc_coef  <- coef(lm(no_agrichemicals ~ farmers_association, df_aei))
+famlab_coef  <- coef(lm(no_agrichemicals ~ only_family_labour, df_aei))
+offfarminc_coef  <- coef(lm(no_agrichemicals ~ off_farm_income, df_aei))
+lowinc_coef  <- coef(lm(no_agrichemicals ~ low_income, df_aei))
+regtech_coef  <- coef(lm(no_agrichemicals ~ extension, df_aei))
+
+all_coefs <- data.frame(cred_coef, assoc_coef, famlab_coef, offfarminc_coef, lowinc_coef, regtech_coef)
+
+# create a data.frame to use in the next plot. 
+all_coefs <- t(all_coefs) # transpose 
+all_coefs <- data.frame(all_coefs) # take it back into a dataframe
+colnames(all_coefs) <- c("intercept", "slope") # change column names
+all_coefs["Variable"] <- c("Credit acces", "Farmers' association", "Only family labour", "Off farm income", "Low income", "Extension")
+
+#plot the lines 
+plot <- ggplot(df_aei, aes(x=credit_access, y=no_agrichemicals)) + 
+  geom_point(alpha = 0.001) +
+  geom_abline(aes(intercept=intercept, slope=slope, color=Variable), data=all_coefs) + ylim(0,100) + 
+  xlim(0,100) +
+  ylab("Percentage of family farmers that do not use agrichemicals") + 
+  xlab("Percentage")
+plot
+
+```
+
+
+```{r}
+#REGRESSIONS AND COEFFICIENTS
+cred_coef2 <- coef(lm(cover_crop ~ credit_access, df_aei))
+assoc_coef2  <- coef(lm(cover_crop ~ farmers_association, df_aei))
+famlab_coef2  <- coef(lm(cover_crop ~ only_family_labour, df_aei))
+offfarminc_coef2  <- coef(lm(cover_crop ~ off_farm_income, df_aei))
+lowinc_coef2  <- coef(lm(cover_crop ~ low_income, df_aei))
+regtech_coef2  <- coef(lm(cover_crop ~ extension, df_aei))
+
+all_coefs2 <- data.frame(cred_coef2, assoc_coef2, famlab_coef2, offfarminc_coef2, lowinc_coef2, regtech_coef2)
+
+# create a data.frame to use in the next plot. 
+all_coefs2 <- t(all_coefs2) # transpose 
+all_coefs2 <- data.frame(all_coefs2) # take it back into a dataframe
+colnames(all_coefs2) <- c("intercept", "slope") # change column names
+all_coefs2["Variable"] <- c("Credit acces", "Farmers' association", "Only family labour", "Off farm income", "Low income", "Extension")
+
+#plot the lines 
+plot2 <- ggplot(df_aei, aes(x=credit_access, y=no_agrichemicals)) + 
+  geom_point(alpha = 0.001) +
+  geom_abline(aes(intercept=intercept, slope=slope, color=Variable), data=all_coefs2) + ylim(0,100) + 
+  xlim(0,100) +
+  ylab("Percentage of family farmers that use cover crops") + 
+  xlab("Percentage")
+plot2
+
+```
+
+###PART 3: BACKGROUND CHECKS
+***
+#####HISTOGRAMS
+```{r}
+# make sure that this is pulling from the clean dataset (no small farms, no NAs - i.e. the data that is used in the regression) 
+a <- ggplot(df_aei, aes(x = covercrop)) +
+ geom_histogram()
+b <- ggplot(df_aei, aes(x = croprot)) +
+ geom_histogram()
+# c <- ggplot(df_aei, aes(x = orgcomp)) +
+#  geom_histogram()
+d <- ggplot(df_aei, aes(x = manure)) +
+ geom_histogram()
+e <- ggplot(df_aei, aes(x = apm)) +
+ geom_histogram()
+f <- ggplot(df_aei, aes(x = diverse)) +
+ geom_histogram()
+g <- ggplot(df_aei, aes(x = straw)) +
+ geom_histogram()
+h<- ggplot(df_aei, aes(x = nochem)) +
+  geom_histogram()
+
+p <- ggplot(df_aei, aes(x = famlab)) +
+  geom_histogram()
+q <- ggplot(df_aei, aes(x = associated)) +
+ geom_histogram()
+r <- ggplot(df_aei, aes(x = lowincome)) +
+ geom_histogram()
+s <- ggplot(df_aei, aes(x = regtech)) +
+ geom_histogram()
+t <- ggplot(df_aei, aes(x = credit)) +
+ geom_histogram()
+u <- ggplot(df_aei, aes(x = offfarminc)) +
+  geom_histogram()
+
+# note that the alphabet is split because I took this from a previous file 
+grid.arrange(a,b,d,e,f,g,h,p,q,r,s,t,u, ncol=3)
+
+```
+
+##### SKEW, KURT, VARIANCE
+```{r data checks}
+# create dataframe without the first two columns because they aren't numbers 
+df_onlynum <- df_aei[,3:(ncol(df_aei))] # drop the first two columns 
+
+#skewness 
+skew <- apply(df_onlynum, 2, skewness, na.rm=TRUE) # call correct df, 2 means looking at columns (1 would indicate looking rows), skewness is the function applied, ignore NAs 
+
+#kurtosis
+kurt <- apply(df_onlynum, 2, kurtosis, na.rm=TRUE) # df, looking at columns, kurtosis is function, ignore NAs
+
+#variance 
+variance <- apply(df_onlynum, 2, var, na.rm=TRUE)# df, looking at columns, variance is function, ignore NAs
+
+```
+
+```{r table }
+#combine values lists into a dataframe 
+data_checks <- cbind(kurt, skew, variance) 
+knitr::kable(data_checks) # nice table with all the data 
+
+```
+
+##### CORRELATIONS
+```{r}
+cor(df_aei$diverse, df_aei$credit) # = 0.57
+cor(df_aei$diverse, df_aei$regtech) # = NONE
+cor(df_aei$diverse, df_aei$associated) # = 0.4
+cor(df_aei$diverse, df_aei$lowincome) # 0.52
+cor(df_aei$regtech, df_aei$credit) # = 0.39
+cor(df_aei$regtech, df_aei$associated) # = 0.32
+cor(df_aei$credit, df_aei$associated) # = 0.67
+cor(df_aei$straw, df_aei$manure) # = 0.23
+cor(df_aei$straw, df_aei$covercrop) # = 0.10
+cor(df_aei$manure, df_aei$manure)
+cor(df_aei$covercrop, df_aei$croprot)
+cor(df_aei$low_income, df_aei$only_family_labour) # = 0.14
+cor(df_aei$credit, df_aei$low_income) # = 0.16
+cor(df_aei$credit, df_aei$only_family_labour) # = -0.17
+cor(df_aei$credit, df_aei$off_farm_income) # -0.51
+
+
+summary(lm(farmers_association ~ credit_access, df_aei))
+summary(lm(extension ~ credit_access, df_aei))
+summary(lm(credit_access~ farmers_association, df_aei))
+
+
+```
+
+#### REGRESSIONS WITH INDIVIDUAL DEPENDENT VARIABLES
+```{r}
+#COVER CROP 
+lm_covercrop <- lm(covercrop ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_covercrop)
+plot(lm_covercrop)
+
+#CROP ROTATION 
+lm_croprot <- lm(croprot ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_croprot)
+plot(lm_croprot)
+
+#MANURE
+lm_manure <- lm(manure ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_manure)
+plot(lm_manure)
+
+#APM
+lm_apm <- lm(apm ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_apm)
+plot(lm_apm)
+
+#DIVERSE
+lm_diverse <- lm(diverse ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_diverse)
+plot(lm_diverse)
+
+#STRAW
+lm_straw <- lm(straw ~ lowincome + credit + regtech + associated, df_aei)
+summary(lm_straw)
+plot(lm_straw)
+
+# NOCHEM 
+lm_nochem <- lm(nochem ~ lowincome + credit + regtech + associated + famlab + offfarminc, df_aei)
+summary(lm_nochem)
+plot(lm_nochem)
+
+```
+
+Thes correlations point to a moderate-strong relationship between production diversity and credit. So diversification of acitivies requires some access to credit 
+
+```{r testing some regression line graphs}
+
+plot(df_aei$direct_planting, df_aei$no_agrichemicals)
+abline(lm(df_aei$diverse~df_aei$credit))
+
+```
+

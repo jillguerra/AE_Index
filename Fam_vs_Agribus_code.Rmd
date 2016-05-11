@@ -1,0 +1,109 @@
+---
+title: "Graphs for P1"
+author: "Jill Guerra"
+date: "May 4, 2016"
+output: html_document
+---
+Load packages 
+```{r}
+library(ggplot2)
+#install.packages("wesanderson")
+library(wesanderson) # form here https://github.com/karthik/wesanderson
+library(dplyr)
+
+```
+
+Family farmers vs. Agribusiness stats for Brazil. 
+```{r}
+# create vectors 
+Type <- c('Credit', 'Credit', 'Land', 'Land', 'Export crops', 'Export crops', 'Domestic crops', 'Domestic crops', 'Labour', 'Labour')
+Type
+Sector <- c('Family Farming', 'Agribusiness', 'Family Farming', 'Agribusiness', 'Family Farming', 'Agribusiness', 'Family Farming', 'Agribusiness', 'Family Farming', 'Agribusiness')
+Percentage <- c(14, 86, 24, 76, 40, 60, 70, 30, 74, 26)
+
+#create dataframe from vector
+Sector_comparison <- data.frame(Type, Sector, Percentage)
+
+
+```
+
+```{r}
+Sector_comparison$Type <- factor(Sector_comparison$Type,
+         levels = c("Credit", "Land", "Export crops", "Domestic crops", "Labour")) # change the order that the Type's appear in the bar chart
+
+Sector_comparison_plot <- ggplot(Sector_comparison, aes(x = Sector, y = Percentage, fill = Sector)) + 
+    geom_bar(stat = 'identity', position = 'stack') + 
+    facet_grid(~ Type) + 
+    scale_fill_manual(values = wes_palette("Darjeeling")) +
+    theme(strip.text.x = element_text(size = 11), axis.text.x=element_blank(),  axis.ticks.x=element_blank(), axis.text.y = element_blank(), axis.ticks.y=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position="bottom", legend.title=element_blank()) +
+    geom_text(aes(label = Percentage), colour = 'white', size = 3, hjust = 0.5, vjust = 3, position = "stack") # adds numbers on the graph. 
+    
+# scale_fill_manual - is to change the colours and legend labels for bar charts 
+# facet_grid separates by muncipality 
+
+Sector_comparison_plot
+ggsave("Sector_comparison_plot.png", Sector_comparison_plot , scale = 1.5, height = 3, width = 4)
+
+```
+
+Commercialization of certified products 
+```{r}
+# create data.frame
+Market <- c("PNAE/PAA", "PNAE/PAA", "Local Farmers' Mkt", "Local Farmers' Mkt", "Non-local Farmers' Mkt", "Non-local Farmers' Mkt", "Direct Sales", "Direct Sales", "Local Grocer", "Local Grocer")
+Significance <- c(">50%", "<50%", ">50%", "<50%", ">50%", "<50%", ">50%", "<50%", ">50%", "<50%")
+Number2 <- c(9,5,2,11,3,3,1,2,0,1)
+comm_comparison <- data.frame(Market, Significance, Number2)
+
+```
+
+```{r} 
+comm_comparison$Market <- factor(comm_comparison$Market,
+         levels = c("PNAE/PAA", "Local Farmers' Mkt", "Non-local Farmers' Mkt", "Direct Sales", "Local Grocer")) # change the order that the Markets appear in the bar chart
+
+comm_comparison_plot <- ggplot(comm_comparison, aes(x = Significance, y = Number2, fill = Significance)) + 
+    geom_bar(stat = 'identity', position = 'stack') + 
+    facet_grid(~ Market) + 
+    scale_fill_manual(values = wes_palette("Darjeeling")) +
+    theme(strip.text.x = element_text(size = 11), axis.text.x=element_blank(),  axis.ticks.x=element_blank(), axis.text.y = element_blank(), axis.ticks.y=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.position="bottom", legend.title=element_blank()) +
+    geom_text(aes(label = Number2), colour = 'white', size = 3, hjust = 0.5, vjust = 2, position = "stack")  # adds numbers on the graph. 
+    
+# scale_fill_manual - is to change the colours and legend labels for bar charts 
+# facet_grid separates by muncipality 
+
+comm_comparison_plot
+ggsave("Comm_Comparison_plot.png", comm_comparison_plot, scale = 1.5, height = 3, width = 6)
+
+```
+
+
+Sample versus Total graph 
+```{r load data set}
+rawdf_aei<- read.csv("~/AEI_Index/Sample_group_data_R_03.15.16.csv", quote = '"', sep = ",", na.strings = c(".",""), strip.white = TRUE) # load full dataset
+```
+
+```{r}
+### This works!! 
+# change all zero's to NA (needed for labelling the graph)
+rawdf_aei[rawdf_aei == 0] <- NA
+
+# # figure out midpoints of each bar so that the numbers posted will be in the middle. 
+# rawdf_aei <- group_by(rawdf_aei,pop) %>%
+#     mutate(pos = cumsum(number) - (0.5 * number))
+
+#plot
+b <- ggplot(rawdf_aei, aes(x = pop, y = number, fill = Type)) + 
+    geom_bar(stat = 'identity', position = 'stack') + 
+    facet_grid(~ municipality) + 
+    scale_fill_manual(values = wes_palette("Darjeeling"), labels = c("Not-certified", "Certified", "In-transition"))  +
+     theme(strip.text.x = element_text(size = 14), axis.text.y = element_blank(), axis.title.y = element_blank(), axis.title.x = element_blank(), axis.ticks.y=element_blank(), legend.position="bottom", legend.title=element_blank()) +
+    geom_text(aes(label = number), colour = 'white', size = 3, hjust = 0.5, vjust = 2, position = "stack")
+  
+# scale_fill_manual - is to change the colours and legend labels for bar charts 
+# facet_grid separates by muncipality 
+
+b
+print(b)
+ggsave("Sample_vs_total_plot.png", b, scale = 1.5, height = 4, width = 4)
+
+```
+

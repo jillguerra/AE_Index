@@ -1,0 +1,36 @@
+
+Linear Model - FULL
+===============================================
+                        Dependent variable:    
+                    ---------------------------
+                         no_agrichemicals      
+-----------------------------------------------
+low_income                    0.3***           
+                               (0.1)           
+                                               
+credit_access                 -0.6***          
+                               (0.1)           
+                                               
+extension                     -0.2**           
+                               (0.1)           
+                                               
+farmers_association           -0.1**           
+                               (0.1)           
+                                               
+only_family_labour            0.3***           
+                               (0.1)           
+                                               
+off_farm_income               0.4***           
+                               (0.1)           
+                                               
+Constant                      28.8***          
+                               (9.4)           
+                                               
+-----------------------------------------------
+Observations                    273            
+R2                              0.6            
+Adjusted R2                     0.6            
+Residual Std. Error       14.6 (df = 266)      
+F Statistic            75.2*** (df = 6; 266)   
+===============================================
+Note:               *p<0.1; **p<0.05; ***p<0.01
